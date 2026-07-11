@@ -1,0 +1,24 @@
+{
+  "artifact": {
+    "name": "openssl",
+    "version": "3.2.2-6.el10",
+    "digest": "sha256:deadcafe"
+  },
+  "build": {
+    "builder": "unknown-external-builder",
+    "signed": false,
+    "reproducible": false,
+    "source_commit": "abc123"
+  },
+  "dependencies": [
+    {"name": "glibc", "version": "2.39", "direct": true}
+  ],
+  "vulnerabilities": [
+    {"id": "CVE-2026-0001", "severity": "high", "fixed": false}
+  ],
+  "policy": {
+    "allowed_builders": ["albs"],
+    "require_signature": true,
+    "require_reproducible": false
+  }
+}

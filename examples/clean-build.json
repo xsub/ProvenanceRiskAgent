@@ -1,0 +1,20 @@
+{
+  "artifact": {
+    "name": "bash",
+    "version": "5.2.26-4.el10",
+    "digest": "sha256:goodcafe"
+  },
+  "build": {
+    "builder": "albs",
+    "signed": true,
+    "reproducible": true,
+    "source_commit": "def456"
+  },
+  "dependencies": [],
+  "vulnerabilities": [],
+  "policy": {
+    "allowed_builders": ["albs"],
+    "require_signature": true,
+    "require_reproducible": false
+  }
+}
