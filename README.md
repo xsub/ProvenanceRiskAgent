@@ -52,34 +52,36 @@ It demonstrates:
 ## Target Architecture
 
 ```mermaid
-flowchart TD
-  subgraph clients["Clients"]
-    client["Browser / CLI / MCP client"];
+flowchart TB
+  subgraph access["Access layer"]
+    direction LR
+    client["Browser / CLI / MCP client"]:::client;
+    web_ui["Minimal web UI"]:::entry;
+    api_service["FastAPI service"]:::entry;
+    mcp_server["MCP server"]:::entry;
   end
 
-  subgraph entrypoints["Application entrypoints"]
-    web_ui["Minimal web UI"];
-    api_service["FastAPI service"];
-    mcp_server["MCP server"];
+  subgraph control["Agent control plane"]
+    direction TB
+    workflow["LangGraph investigation workflow"]:::workflow;
+    planner["Intent parsing<br/>and investigation plan"]:::workflow;
+    adapter_tools["Controlled adapter tools"]:::workflow;
   end
 
-  subgraph orchestration["Agent orchestration"]
-    workflow["LangGraph investigation workflow"];
-    planner["Intent parsing and investigation plan"];
-    adapter_tools["Controlled adapter tools"];
+  subgraph sources["Source evidence engines"]
+    direction LR
+    albs_engine["ALBS Provenance Explorer<br/>build, lineage, CAS, signatures"]:::source;
+    edgp_engine["EDGP<br/>dependencies, advisories, impact"]:::source;
   end
 
-  subgraph engines["Deterministic source engines"]
-    albs_engine["ALBS Provenance Explorer<br/>build, lineage, CAS, signatures"];
-    edgp_engine["EDGP<br/>dependencies, advisories, impact"];
-  end
-
-  subgraph assessment_layer["Evidence, policy, and explanation"]
-    evidence_records["Normalized evidence records"];
-    policy_engine["Deterministic policy and risk"];
-    assessment["Completeness and confidence"];
-    explainer["Grounded explanation<br/>LLM optional"];
-    response["Decision, findings, evidence IDs, trace"];
+  subgraph decisioning["Decision pipeline"]
+    direction TB
+    evidence_records["Normalized evidence records"]:::evidence;
+    policy_engine["Deterministic policy and risk"]:::policy;
+    assessment["Completeness and confidence"]:::policy;
+    explainer["Grounded explanation<br/>LLM optional"]:::explain;
+    response["Decision, findings,<br/>evidence IDs, trace"]:::result;
+    delivery["Rendered in UI<br/>returned by REST or MCP"]:::client;
   end
 
   client --> web_ui;
@@ -98,8 +100,21 @@ flowchart TD
   policy_engine --> assessment;
   assessment --> explainer;
   explainer --> response;
-  response --> api_service;
-  response --> mcp_server;
+  response --> delivery;
+
+  classDef client fill:#dbeafe,stroke:#2563eb,color:#0f172a,stroke-width:2px;
+  classDef entry fill:#dcfce7,stroke:#16a34a,color:#052e16,stroke-width:2px;
+  classDef workflow fill:#fef3c7,stroke:#d97706,color:#422006,stroke-width:2px;
+  classDef source fill:#fce7f3,stroke:#db2777,color:#500724,stroke-width:2px;
+  classDef evidence fill:#ede9fe,stroke:#7c3aed,color:#2e1065,stroke-width:2px;
+  classDef policy fill:#cffafe,stroke:#0891b2,color:#164e63,stroke-width:2px;
+  classDef explain fill:#fae8ff,stroke:#c026d3,color:#581c87,stroke-width:2px;
+  classDef result fill:#fee2e2,stroke:#dc2626,color:#450a0a,stroke-width:2px;
+
+  style access fill:#0b1220,stroke:#60a5fa,stroke-width:2px,color:#dbeafe;
+  style control fill:#1c1917,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
+  style sources fill:#1f1020,stroke:#f472b6,stroke-width:2px,color:#fce7f3;
+  style decisioning fill:#111827,stroke:#22d3ee,stroke-width:2px,color:#cffafe;
 ```
 
 Deterministic code owns evidence retrieval, normalization, policy evaluation,
