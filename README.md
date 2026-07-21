@@ -49,6 +49,23 @@ It demonstrates:
 - separation of deterministic security logic from probabilistic narration;
 - a clean future integration boundary for ALBS Provenance Explorer or EDGP.
 
+## Why an Agent Interface
+
+ALBS Provenance Explorer and EDGP already expose powerful command-line
+interfaces, but the number of commands, flags, source contracts, and
+cross-tool combinations grows quickly. Past a certain point, a human operator
+starts acting like the agent: choosing tools, remembering parameters,
+translating artifact identities, joining outputs, checking policy implications,
+and keeping track of which evidence supports which conclusion.
+
+This project gives those deterministic tools an interface better suited to
+fast investigation loops. The programmatic agent translates a user question
+into a bounded plan, calls the right ALBS and EDGP capabilities with explicit
+parameters, preserves an inspectable trace, and returns a grounded answer
+through UI, REST, CLI, or MCP. The goal is not to hide or replace the source
+tools, but to make their combined evidence faster to use and harder to
+misread.
+
 ## Target Architecture
 
 ```mermaid
