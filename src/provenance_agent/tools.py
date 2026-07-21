@@ -8,9 +8,11 @@ from langchain_core.tools import tool
 from .models import Evidence, Observation, ProvenanceExport
 from .normalization import (
     ALBS_GRAPH_SCHEMA,
+    COMBINED_SCHEMA,
     EDGP_ALBS_ARTIFACT_INVENTORY_SCHEMA,
     EDGP_GRAPH_SNAPSHOT_SCHEMA,
     EDGP_RPM_ALBS_PROVENANCE_SCHEMA,
+    NORMALIZED_SCHEMA,
     SIMPLE_SCHEMA,
 )
 
@@ -315,6 +317,13 @@ def summarize_source_coverage(export_json: str) -> list[dict]:
     source_schema = export["source_schema"]
     source = export["source"]
 
+    if source_schema == COMBINED_SCHEMA:
+        schemas = [item.get("schema", "unknown") for item in source.get("sources", [])]
+        return [_observation(
+            "COMBINED_SOURCE_COVERAGE",
+            "Combined investigation input with source schemas: " + ", ".join(schemas),
+            "sources[].schema",
+        )]
     if source_schema == ALBS_GRAPH_SCHEMA:
         return _summarize_albs_graph(source)
     if source_schema == EDGP_RPM_ALBS_PROVENANCE_SCHEMA:
@@ -350,6 +359,24 @@ EVIDENCE_TOOLS = [
 OBSERVATION_TOOLS = [
     summarize_source_coverage,
 ]
+
+
+def expand_tool_exports(export: dict[str, Any]) -> list[dict[str, Any]]:
+    if export["source_schema"] != COMBINED_SCHEMA:
+        return [export]
+
+    expanded = [export]
+    for index, source in enumerate(export["source"].get("sources", [])):
+        expanded.append(
+            {
+                "schema": NORMALIZED_SCHEMA,
+                "source_schema": source["schema"],
+                "source_path": f"{export['source_path']}#sources[{index}]",
+                "artifact": export["artifact"],
+                "source": source,
+            }
+        )
+    return expanded
 
 
 def _loads(export_json: str) -> dict[str, Any]:

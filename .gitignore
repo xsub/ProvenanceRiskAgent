@@ -6,3 +6,5 @@ dist/
 build/
 .env
 OPENAI_API_KEY
+*.sqlite3
+*.db

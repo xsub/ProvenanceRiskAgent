@@ -6,7 +6,7 @@ from langgraph.graph import END, START, StateGraph
 from .explainer import deterministic_explanation, llm_explanation
 from .models import AnalysisState
 from .repository import load_export
-from .tools import EVIDENCE_TOOLS, OBSERVATION_TOOLS
+from .tools import EVIDENCE_TOOLS, OBSERVATION_TOOLS, expand_tool_exports
 
 
 def load_node(state: AnalysisState) -> dict:
@@ -16,20 +16,22 @@ def load_node(state: AnalysisState) -> dict:
 
 def collect_evidence_node(state: AnalysisState) -> dict:
     # LangChain tools are typed boundaries. The graph decides when they run.
-    export_json = __import__("json").dumps(state["export"])
     evidence: list[dict] = []
-    for evidence_tool in EVIDENCE_TOOLS:
-        result = evidence_tool.invoke({"export_json": export_json})
-        evidence.extend(result)
+    for tool_export in expand_tool_exports(state["export"]):
+        export_json = __import__("json").dumps(tool_export)
+        for evidence_tool in EVIDENCE_TOOLS:
+            result = evidence_tool.invoke({"export_json": export_json})
+            evidence.extend(result)
     return {"evidence": evidence}
 
 
 def collect_observations_node(state: AnalysisState) -> dict:
-    export_json = __import__("json").dumps(state["export"])
     observations: list[dict] = []
-    for observation_tool in OBSERVATION_TOOLS:
-        result = observation_tool.invoke({"export_json": export_json})
-        observations.extend(result)
+    for tool_export in expand_tool_exports(state["export"]):
+        export_json = __import__("json").dumps(tool_export)
+        for observation_tool in OBSERVATION_TOOLS:
+            result = observation_tool.invoke({"export_json": export_json})
+            observations.extend(result)
     return {"observations": observations}
 
 

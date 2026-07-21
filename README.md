@@ -75,6 +75,8 @@ risky, and receive:
 
 The planning baseline is
 [`docs/planning/initial-demonstrator-plan.md`](docs/planning/initial-demonstrator-plan.md).
+The educational build log is
+[`learning-process.md`](learning-process.md).
 
 ## What This Project Demonstrates
 
@@ -227,6 +229,11 @@ and persist the workflow using SQLite or PostgreSQL checkpoints.
    cases for missing signatures, unknown builders, vulnerabilities, incomplete
    provenance, contradictions, timeouts, malformed data, and prompt injection.
 
+The current implementation contains the first runnable vertical slice of this
+roadmap: typed investigation contracts, a FastAPI service, a minimal web UI,
+a SQLite investigation event log, Docker Compose packaging, and deterministic
+CLI/API execution over bundled fixtures.
+
 ## Input Contract
 
 The preferred inputs are real exports from the local EDGP and ALBS projects:
@@ -266,16 +273,50 @@ input:
 }
 ```
 
-## Current Local CLI Harness
+## Current MVP Slice
 
-Until the Docker Compose MVP is implemented, the current runnable slice is the
-local deterministic CLI workflow.
+Run the container-first demonstrator:
+
+```bash
+docker compose up --build
+```
+
+Then open `http://localhost:8080`, select `Albs Edgp Risk Case`, and run the
+default investigation. That curated fixture combines ALBS provenance evidence
+with EDGP installed-RPM to ALBS artifact matching evidence in one verdict.
+The same service also exposes:
+
+- `GET /healthz`
+- `GET /readyz`
+- `GET /api/v1/examples`
+- `POST /api/v1/evaluate`
+- `POST /api/v1/investigations`
+- `GET /api/v1/investigations/{id}`
+- `GET /api/v1/investigations/{id}/events`
+- `GET /api/v1/investigations/{id}/evidence`
+
+Investigation state is persisted in a local SQLite event log. In the Compose
+setup the database lives under `/data` and is backed by a named volume.
+
+The local deterministic CLI workflow remains available:
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 pip install -e .
 provenance-agent analyze examples/suspicious-build.json
+```
+
+The primary combined MVP case can be run from the CLI too:
+
+```bash
+provenance-agent analyze examples/albs-edgp-risk-case.json
+```
+
+The UI/API can also be started from the installed CLI:
+
+```bash
+provenance-agent serve --port 8080
 ```
 
 The default mode is fully local and deterministic.
@@ -325,7 +366,14 @@ depend on one provider.
 1. Replace the JSON repository with an ALBS/EDGP HTTP or SQLite adapter.
 2. Add graph queries: reverse dependencies, blast radius and provenance paths.
 3. Add `interrupt()` before review routing or policy override.
-4. Add a persistent checkpointer.
+4. Promote the SQLite event log into a LangGraph checkpointer or PostgreSQL
+   store when interrupt/resume workflows become first-class.
 5. Add LangSmith or OpenTelemetry traces.
 6. Build a golden evaluation set of known artifacts and expected evidence.
 7. Add prompt-injection defenses: treat package metadata as untrusted data.
+
+Redis, RabbitMQ, and Celery are deliberately not required for the MVP. Redis
+can later support caching, live progress pub/sub, short-lived locks, or rate
+limits. RabbitMQ/Celery can later support distributed workers and durable
+retry queues. Neither should be the source of truth for evidence or verdicts;
+that belongs in the investigation store.

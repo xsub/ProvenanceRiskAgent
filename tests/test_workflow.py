@@ -27,6 +27,24 @@ def test_clean_build_has_zero_score():
     assert result["requires_review"] is False
 
 
+def test_combined_albs_edgp_fixture_uses_both_source_engines():
+    graph = build_graph()
+    result = graph.invoke({"input_path": "examples/albs-edgp-risk-case.json"})
+
+    observation_codes = {item["code"] for item in result["observations"]}
+    evidence_codes = {item["code"] for item in result["evidence"]}
+
+    assert result["export"]["source_schema"] == "provenance-risk-agent.combined.v1"
+    assert result["risk_score"] == 85
+    assert result["risk_level"] == "critical"
+    assert result["requires_review"] is True
+    assert "COMBINED_SOURCE_COVERAGE" in observation_codes
+    assert "ALBS_TRUST_COVERAGE" in observation_codes
+    assert "EDGP_RPM_ALBS_COVERAGE" in observation_codes
+    assert "ALBS_SIGNATURE_MISSING" in evidence_codes
+    assert "EDGP_RPM_ALBS_UNMATCHED_PACKAGES" in evidence_codes
+
+
 def test_real_edgp_rpm_albs_provenance_fixture_is_supported():
     path = SOFTWARE_SUPPLY_CHAIN / "tests/fixtures/rpm-albs-provenance.json"
     if not path.exists():

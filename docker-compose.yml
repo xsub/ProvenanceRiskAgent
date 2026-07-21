@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    environment:
+      PROVENANCE_AGENT_DB: /data/provenance-agent.sqlite3
+    ports:
+      - "8080:8080"
+    volumes:
+      - provenance-agent-data:/data
+
+volumes:
+  provenance-agent-data:

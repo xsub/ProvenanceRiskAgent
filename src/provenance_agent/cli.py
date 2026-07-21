@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Literal
 
@@ -60,6 +61,22 @@ def _render_result(result: dict, format: str) -> str:
         }
         return json.dumps(payload, indent=2, sort_keys=True)
     return result["report"]
+
+
+@app.command()
+def serve(
+    host: str = typer.Option("0.0.0.0", help="Bind host."),
+    port: int = typer.Option(8080, help="Bind port."),
+    db: Path = typer.Option(
+        Path("provenance-agent.sqlite3"),
+        help="SQLite investigation event log path.",
+    ),
+) -> None:
+    """Start the local UI/API service."""
+    os.environ["PROVENANCE_AGENT_DB"] = str(db)
+    import uvicorn
+
+    uvicorn.run("provenance_agent.api:app", host=host, port=port)
 
 
 if __name__ == "__main__":

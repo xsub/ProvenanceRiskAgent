@@ -38,7 +38,9 @@ Current shape:
 
 Gaps against the project brief:
 
-- No FastAPI service, web UI, MCP interface, Dockerfile, or Compose setup yet.
+- FastAPI service, minimal web UI, Dockerfile, Compose setup, and SQLite
+  investigation event log are now present in the first MVP slice.
+- MCP interface is still pending.
 - Risk score, risk level, human-review flag, and verified facts exist, but
   decision state, evidence completeness, confidence, contradictions, policy
   profiles, and trace schema are not yet first-class contracts.
@@ -380,9 +382,9 @@ Initial endpoints:
 - `POST /api/v1/investigations/{id}/resume`
 - `POST /api/v1/investigations/{id}/approve`
 
-For the first demonstrator, in-memory investigation state is acceptable if the
-README clearly says it is non-persistent. Persistent checkpointers should be a
-later stage with an ADR choosing SQLite or PostgreSQL.
+For the first demonstrator, investigation state is stored in SQLite as a
+durable event log. A future persistent LangGraph checkpointer can reuse SQLite
+or move to PostgreSQL when interrupt/resume workflows become first-class.
 
 ## 8. Minimal Vertical Slice
 
@@ -398,6 +400,12 @@ Recommended demonstration artifact:
 - Add a curated negative case in this repo that pairs:
   - ALBS provenance evidence with a missing or failed category; and
   - EDGP vulnerability or reverse-dependency evidence indicating impact.
+
+Current bundled MVP artifact:
+
+- `examples/albs-edgp-risk-case.json` uses the combined fixture schema to pair
+  ALBS provenance evidence with EDGP installed-RPM to ALBS artifact matching
+  evidence in one deterministic investigation result.
 
 The slice must:
 
@@ -492,7 +500,11 @@ Risks:
 Unresolved decisions:
 
 - Exact default policy profile and risk weights for ALLOW/DENY/REVIEW.
-- Whether first persistent checkpoints use SQLite or PostgreSQL.
+- Whether future LangGraph checkpoints should stay on SQLite or move to
+  PostgreSQL.
+- Whether Redis, RabbitMQ/Celery, or another worker backend becomes necessary
+  after the SQLite event log proves insufficient for concurrency, progress
+  streaming, or durable background execution.
 - Whether MCP uses streamable HTTP, stdio, or both in the demonstrator image.
 - Whether process adapters should invoke upstream CLIs in stage 2 or wait until
   the JSON fixture path is complete.
@@ -603,7 +615,7 @@ Acceptance criteria:
 
 - Health/readiness endpoints work.
 - `POST /api/v1/evaluate` returns a complete deterministic result.
-- Investigation create/status/events/evidence endpoints work with in-memory
+- Investigation create/status/events/evidence endpoints work with SQLite-backed
   state.
 - API schemas match Pydantic contracts.
 

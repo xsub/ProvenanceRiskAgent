@@ -1,0 +1,146 @@
+{
+  "schema": "provenance-risk-agent.combined.v1",
+  "artifact": {
+    "name": "nginx-core",
+    "version": "1.20.1-16.el9_4.1",
+    "digest": "sha256:e81b769bd3647a3310fff0d364f19980d1fe39f01a444feffdfed9430a68f4c3"
+  },
+  "sources": [
+    {
+      "schema": "albs-provenance-explorer/v1",
+      "nodes": [
+        {
+          "id": "commit:nginx:911945",
+          "label": "911945",
+          "metadata": {
+            "package": "nginx"
+          },
+          "type": "git_commit"
+        },
+        {
+          "id": "cas:source:nginx:911945",
+          "label": "source CAS 911945",
+          "metadata": {
+            "albs_authenticated": true,
+            "cas_hash": "911945c71710c83cf6f760447c32d8d6cae737dc",
+            "evidence_present": true
+          },
+          "type": "cas_attestation"
+        },
+        {
+          "id": "build:albs-task:188077",
+          "label": "ALBS task 188077 x86_64",
+          "metadata": {
+            "albs_build_id": "17812",
+            "arch": "x86_64",
+            "status": 2
+          },
+          "type": "build_task"
+        },
+        {
+          "id": "rpm:3237140:nginx-core-1.20.1-16.el9_4.1.x86_64.rpm",
+          "label": "nginx-core-1.20.1-16.el9_4.1.x86_64.rpm",
+          "metadata": {
+            "arch": "x86_64",
+            "artifact_id": 3237140,
+            "cas_hash": "e81b769bd3647a3310fff0d364f19980d1fe39f01a444feffdfed9430a68f4c3",
+            "name": "nginx-core",
+            "release": "16.el9_4.1",
+            "version": "1.20.1"
+          },
+          "type": "binary_rpm"
+        },
+        {
+          "id": "cas:artifact:e81b769",
+          "label": "artifact CAS e81b769",
+          "metadata": {
+            "cas_hash": "e81b769bd3647a3310fff0d364f19980d1fe39f01a444feffdfed9430a68f4c3",
+            "evidence_present": true
+          },
+          "type": "cas_attestation"
+        },
+        {
+          "id": "repo-release:ALBS release 7396",
+          "label": "ALBS release 7396",
+          "metadata": {
+            "release_id": 7396
+          },
+          "type": "repository_release"
+        }
+      ],
+      "edges": [
+        {
+          "relation": "authenticated_by",
+          "source": "commit:nginx:911945",
+          "target": "cas:source:nginx:911945"
+        },
+        {
+          "relation": "built_by",
+          "source": "cas:source:nginx:911945",
+          "target": "build:albs-task:188077"
+        },
+        {
+          "relation": "produces",
+          "source": "build:albs-task:188077",
+          "target": "rpm:3237140:nginx-core-1.20.1-16.el9_4.1.x86_64.rpm"
+        },
+        {
+          "relation": "authenticated_by",
+          "source": "rpm:3237140:nginx-core-1.20.1-16.el9_4.1.x86_64.rpm",
+          "target": "cas:artifact:e81b769"
+        },
+        {
+          "relation": "released_to",
+          "source": "rpm:3237140:nginx-core-1.20.1-16.el9_4.1.x86_64.rpm",
+          "target": "repo-release:ALBS release 7396"
+        }
+      ]
+    },
+    {
+      "schema": "edgp.rpm.albs_provenance.v1",
+      "ecosystem": "rpm",
+      "root": "rpm-installed==local",
+      "summary": {
+        "albsArtifacts": 3,
+        "installedPackages": 2,
+        "matchedPackages": 1,
+        "unmatchedPackages": 1
+      },
+      "matches": [
+        {
+          "installedPackage": {
+            "arch": "x86_64",
+            "name": "nginx-core",
+            "nodeId": "nginx-core==1.20.1-16.el9_4.1",
+            "release": "16.el9_4.1",
+            "sourceRpm": "nginx-1.20.1-16.el9_4.1.src.rpm",
+            "version": "1.20.1"
+          },
+          "albsArtifact": {
+            "artifactArch": "x86_64",
+            "artifactId": "3237140",
+            "artifactKind": "rpm",
+            "buildTaskId": "188077",
+            "casHash": "e81b769bd3647a3310fff0d364f19980d1fe39f01a444feffdfed9430a68f4c3",
+            "filename": "nginx-core-1.20.1-16.el9_4.1.x86_64.rpm",
+            "packageName": "nginx-core",
+            "release": "16.el9_4.1",
+            "version": "1.20.1"
+          },
+          "buildId": "17812",
+          "releaseId": "7396"
+        }
+      ],
+      "unmatchedInstalledPackages": [
+        {
+          "arch": "x86_64",
+          "name": "openssl-libs",
+          "nodeId": "openssl-libs==3.2.2-6.el10",
+          "release": "6.el10",
+          "sourceRpm": "openssl-3.2.2-6.el10.src.rpm",
+          "version": "3.2.2"
+        }
+      ]
+    }
+  ]
+}

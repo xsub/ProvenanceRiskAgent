@@ -8,6 +8,7 @@ from .models import ProvenanceExport
 
 NORMALIZED_SCHEMA = "provenance-risk-agent.normalized.v1"
 SIMPLE_SCHEMA = "provenance-risk-agent.simple.v1"
+COMBINED_SCHEMA = "provenance-risk-agent.combined.v1"
 ALBS_GRAPH_SCHEMA = "albs-provenance-explorer/v1"
 EDGP_RPM_ALBS_PROVENANCE_SCHEMA = "edgp.rpm.albs_provenance.v1"
 EDGP_GRAPH_SNAPSHOT_SCHEMA = "edgp.graph.snapshot.v1"
@@ -24,6 +25,9 @@ def normalize_export(raw: dict[str, Any], source_path: Path) -> dict[str, Any]:
         artifact = _artifact_from_graph_snapshot(raw)
     elif schema == EDGP_ALBS_ARTIFACT_INVENTORY_SCHEMA:
         artifact = _artifact_from_albs_inventory(raw)
+    elif schema == COMBINED_SCHEMA:
+        _validate_combined_sources(raw)
+        artifact = _artifact_from_combined(raw)
     elif "artifact" in raw and "build" in raw:
         simple = ProvenanceExport.model_validate(raw)
         raw = simple.model_dump(mode="json")
@@ -32,7 +36,7 @@ def normalize_export(raw: dict[str, Any], source_path: Path) -> dict[str, Any]:
     else:
         raise ValueError(
             "Unsupported provenance export. Expected one of: "
-            f"{SIMPLE_SCHEMA}, {ALBS_GRAPH_SCHEMA}, "
+            f"{SIMPLE_SCHEMA}, {COMBINED_SCHEMA}, {ALBS_GRAPH_SCHEMA}, "
             f"{EDGP_RPM_ALBS_PROVENANCE_SCHEMA}, {EDGP_GRAPH_SNAPSHOT_SCHEMA}, "
             f"{EDGP_ALBS_ARTIFACT_INVENTORY_SCHEMA}."
         )
@@ -104,6 +108,35 @@ def _artifact_from_albs_inventory(raw: dict[str, Any]) -> dict[str, str]:
         "version": _version_release(item.get("version"), item.get("release")),
         "digest": str(item.get("casHash") or ""),
     }
+
+
+def _artifact_from_combined(raw: dict[str, Any]) -> dict[str, str]:
+    artifact = raw.get("artifact") or {}
+    return {
+        "name": str(artifact.get("name") or "combined-artifact"),
+        "version": str(artifact.get("version") or ""),
+        "digest": str(artifact.get("digest") or ""),
+    }
+
+
+def _validate_combined_sources(raw: dict[str, Any]) -> None:
+    sources = raw.get("sources")
+    if not isinstance(sources, list) or not sources:
+        raise ValueError("Combined provenance export requires a non-empty sources list.")
+
+    supported = {
+        ALBS_GRAPH_SCHEMA,
+        EDGP_RPM_ALBS_PROVENANCE_SCHEMA,
+        EDGP_GRAPH_SNAPSHOT_SCHEMA,
+        EDGP_ALBS_ARTIFACT_INVENTORY_SCHEMA,
+    }
+    for index, source in enumerate(sources):
+        schema = source.get("schema") if isinstance(source, dict) else None
+        if schema not in supported:
+            raise ValueError(
+                "Combined provenance export source "
+                f"{index} has unsupported schema: {schema!r}."
+            )
 
 
 def _preferred_albs_artifact_node(nodes: list[dict[str, Any]]) -> dict[str, Any] | None:
