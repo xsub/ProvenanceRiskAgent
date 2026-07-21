@@ -57,5 +57,6 @@ format only. It is not the target ALBS/EDGP contract.
   explicit trust-path relations.
 - EDGP fixtures validate adapter shape, but they must not be described as
   production ALBS data unless the source export is confirmed.
-- Future policy decisions should be negotiated before adding heavier weights for
-  missing SBOM, errata coverage, reverse-dependency blast radius or quarantine.
+- Future policy profiles should be negotiated before adding heavier weights for
+  missing SBOM, errata coverage, reverse-dependency blast radius, or
+  `ALLOW`/`DENY`/`REVIEW` routing.

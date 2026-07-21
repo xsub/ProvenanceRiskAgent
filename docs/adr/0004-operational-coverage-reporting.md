@@ -38,4 +38,5 @@ evidence and explanation, but not the full raw input export.
 - Positive facts remain distinct from risk evidence and do not change scoring.
 - The result can be consumed by scripts, CI or future UI code without scraping
   Rich-rendered Markdown.
-- This still does not mean "safe to admit"; admission remains a policy decision.
+- This still does not mean "safe to allow"; `ALLOW`, `DENY`, `REVIEW`, or
+  `UNKNOWN` remains a policy decision.

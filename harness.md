@@ -1,6 +1,7 @@
 # Project Harness
 
-This file defines the repeatable local harness for Provenance Risk Agent work.
+This file defines the repeatable local harness for Enterprise Linux Provenance
+Risk Agent work.
 
 ## Current Commands
 
@@ -32,7 +33,7 @@ provenance-agent analyze examples/suspicious-build.json
 provenance-agent analyze examples/suspicious-build.json --format json
 ```
 
-Run against local ALBS / EDGP project contracts:
+Run against local ALBS/EDGP project contracts:
 
 ```bash
 provenance-agent analyze /Users/pawel/_DEV/ALBS-provenance/albs-provenance-explorer/examples/demo-nginx-core/nginx-core-x86_64-trust.json
@@ -53,8 +54,7 @@ provenance-agent analyze examples/suspicious-build.json --model openai:gpt-4.1-m
 - Treat `ProjectGoals.md` as the product and architecture goal source.
 - Record architectural decisions as ADRs under `docs/adr/`.
 - Do not create synthetic production evidence. Use project fixtures only for
-  code-level tests and request real ALBS / supply-chain exports for validation
-  claims.
+  code-level tests and request real ALBS/EDGP exports for validation claims.
 - Verify claims against code, tests or source data before treating them as
   facts.
 - Keep deterministic evidence extraction and scoring independent from LLM

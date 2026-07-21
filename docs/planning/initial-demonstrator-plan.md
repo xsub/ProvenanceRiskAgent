@@ -2,11 +2,11 @@
 
 ## Status
 
-Draft for review.
+Reviewed planning baseline.
 
 Date: 2026-07-21.
 
-Branch: `codex/start-enterprise-linux-provenance-risk-agent`.
+Integration branch: `main`.
 
 ## 1. Current-State Assessment
 
@@ -142,7 +142,7 @@ Responsibilities left outside this repo:
 The LLM may interpret intent, choose a bounded plan, and explain supplied
 evidence. It must not create package facts, graph relationships, vulnerability
 matches, policy failures, risk scores, completeness values, confidence values,
-or admission decisions.
+or decision states.
 
 ## 3. Repository and Deployment Topology
 
@@ -357,10 +357,10 @@ Initial MCP tools:
 - `retrieve_vulnerabilities`
 - `evaluate_policy`
 - `evaluate_artifact_risk`
-- `explain_admission_decision`
+- `explain_decision`
 
 MCP is an agent/tool boundary. It should not replace the stable REST API for
-web, CLI, local security tooling, or future admission clients.
+web, CLI, local security tooling, or future policy clients.
 
 ### REST
 
@@ -693,4 +693,3 @@ and receive:
 - ALBS provenance evidence and EDGP dependency/advisory/impact evidence in one
   result;
 - no unsupported claims in the golden evaluation.
-

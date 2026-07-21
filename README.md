@@ -30,7 +30,7 @@ behavior lives in bounded workflow orchestration, tool selection, state
 management, evidence normalization, missing-evidence detection, contradiction
 detection, policy evaluation, and grounded synthesis. An LLM can help interpret
 intent and explain results, but it is not the authority for evidence, risk,
-completeness, confidence, or admission decisions.
+completeness, confidence, or decision states.
 
 In this architecture, the agent behaves less like a chatbot and more like a
 specialized security officer for software supply-chain evidence. It investigates
@@ -38,7 +38,7 @@ an artifact, verifies deterministic evidence, applies policy rules, identifies
 missing or contradictory facts, and produces a verdict. The verdict is not an
 unsupported model opinion: it must be backed by evidence records and rule
 results, with enough traceability for a human or downstream system to accept,
-review, or reject it.
+request review, or route it to a policy decision.
 
 The policy layer plays the role of the rulebook: evidence is checked against
 explicit rules, and every material conclusion must cite the facts that support
@@ -290,7 +290,7 @@ Reports separate verified facts from risk evidence. Verified facts describe
 coverage that was present, such as ALBS signature/CAS/release coverage or EDGP
 match coverage. Risk evidence is the weighted material that changes the score.
 
-Run against the local ALBS / EDGP project contracts:
+Run against the local ALBS/EDGP project contracts:
 
 ```bash
 provenance-agent analyze /Users/pawel/_DEV/ALBS-provenance/albs-provenance-explorer/examples/demo-nginx-core/nginx-core-x86_64-trust.json
@@ -324,7 +324,7 @@ depend on one provider.
 
 1. Replace the JSON repository with an ALBS/EDGP HTTP or SQLite adapter.
 2. Add graph queries: reverse dependencies, blast radius and provenance paths.
-3. Add `interrupt()` before quarantine or policy override.
+3. Add `interrupt()` before review routing or policy override.
 4. Add a persistent checkpointer.
 5. Add LangSmith or OpenTelemetry traces.
 6. Build a golden evaluation set of known artifacts and expected evidence.

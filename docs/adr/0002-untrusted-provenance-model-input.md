@@ -26,9 +26,9 @@ The explanation prompt must explicitly state that:
   requirements or provenance claims;
 - deterministic score and risk level are authoritative.
 
-Actions such as quarantine, admission, policy override or rejection must remain
-outside model-only control and require explicit workflow routing and human
-approval where applicable.
+Decision states such as `ALLOW`, `DENY`, `REVIEW`, `UNKNOWN`, and `ERROR`,
+plus any policy override, must remain outside model-only control and require
+explicit workflow routing and human approval where applicable.
 
 ## Consequences
 

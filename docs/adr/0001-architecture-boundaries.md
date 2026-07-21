@@ -1,4 +1,4 @@
-# ADR 0001: Architecture Boundaries for Provenance Risk Agent
+# ADR 0001: Architecture Boundaries for Enterprise Linux Provenance Risk Agent
 
 ## Status
 
@@ -7,24 +7,25 @@ Accepted.
 ## Context
 
 The project goal is to build a working provenance and risk analysis agent based
-on ALBS / Software Supply Chain data. The project must make the architectural
-boundary between LangChain and LangGraph explicit while keeping the analytical
-core deterministic.
+on ALBS Provenance Explorer and Enterprise Dependency Graph Pipeline (EDGP)
+evidence. The project must make the architectural boundary between LangChain
+and LangGraph explicit while keeping the analytical core deterministic.
 
 The user-stated direction is:
 
 - Use LangChain as the layer for models, prompts and tools.
 - Use LangGraph as the explicit process automaton with stages, state, branches
   and an eventual stop-before-decision capability.
-- Build an external adapter over JSON exported from ALBS Provenance Explorer.
+- Build external adapters over JSON exported from ALBS Provenance Explorer and
+  EDGP.
 - Do not push the LLM into the analytical core.
 
 ## Decision
 
 The project will use:
 
-- A documented JSON input contract as the integration boundary for ALBS
-  Provenance Explorer exports.
+- Documented JSON input contracts as the integration boundary for ALBS
+  Provenance Explorer and EDGP exports.
 - Deterministic code for evidence extraction, risk scoring and review routing.
 - LangChain tools as typed callable boundaries over provenance data.
 - LangChain prompt/model composition only for evidence-grounded narration.
@@ -39,7 +40,7 @@ The LLM must not create, modify or override:
 - risk scores,
 - risk levels,
 - policy routing,
-- final admission decisions.
+- final decision states.
 
 ## Consequences
 
@@ -53,7 +54,7 @@ The LLM must not create, modify or override:
 
 ## Follow-Up ADR Candidates
 
-- ALBS Provenance Explorer export schema and adapter contract.
+- ALBS Provenance Explorer and EDGP export schemas and adapter contracts.
 - Human review interrupt/resume persistence.
 - Checkpointer backend selection.
 - Risk scoring model and policy vocabulary.

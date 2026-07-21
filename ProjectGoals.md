@@ -1,9 +1,9 @@
-# Project Goals
+# Enterprise Linux Provenance Risk Agent Goals
 
 ## Primary Goal
 
-Build a working agent for provenance and risk analysis based on ALBS / Software
-Supply Chain data.
+Build a working agent for provenance and risk analysis based on ALBS Provenance
+Explorer and Enterprise Dependency Graph Pipeline (EDGP) evidence.
 
 The project must demonstrate the architectural difference between:
 
@@ -11,20 +11,22 @@ The project must demonstrate the architectural difference between:
 - LangGraph as an explicit process automaton with stages, state, branches and
   the ability to stop before a decision.
 
-The project is an external adapter over JSON exported from ALBS Provenance
-Explorer. The LLM must not be pushed into the analytical core.
+The project is an orchestration and presentation layer over deterministic
+source engines. It starts with external adapters over JSON exported from ALBS
+Provenance Explorer and EDGP. The LLM must not be pushed into the analytical
+core.
 
 ## Product Boundary
 
-- Input: JSON export from ALBS Provenance Explorer, or a documented compatible
-  software-supply-chain export.
+- Input: JSON exports from ALBS Provenance Explorer, EDGP, or a documented
+  compatible software-supply-chain export.
 - Core analysis: deterministic evidence extraction and deterministic risk
   scoring.
 - LLM usage: evidence-grounded explanation only, without changing evidence,
-  score or policy decision.
+  score, evidence completeness, confidence, or policy decision state.
 - Workflow: explicit LangGraph state machine with auditable nodes and routing.
-- Integration shape: external adapter over exported provenance data, not a
-  modification of ALBS analytical internals.
+- Integration shape: external adapters over exported evidence data, not a
+  modification of ALBS or EDGP analytical internals.
 - Reports: distinguish verified coverage facts from risk-raising evidence.
 
 ## Verified Source Contracts
@@ -49,11 +51,11 @@ Explorer. The LLM must not be pushed into the analytical core.
 
 ## Open Architectural Questions
 
-- Exact ALBS Provenance Explorer JSON export schema and version.
+- Exact ALBS Provenance Explorer and EDGP JSON export schemas and versions.
 - Whether persisted LangGraph checkpoints should use SQLite or PostgreSQL.
 - The interrupt/resume contract for human review.
-- Admission decision vocabulary: admit, quarantine, escalate, reject, or another
-  project-specific set.
+- Exact policy profiles and risk weights for `ALLOW`, `DENY`, `REVIEW`,
+  `UNKNOWN`, and `ERROR`.
 - Evaluation data source for real ALBS artifacts and expected evidence.
-- Whether missing SBOM or errata coverage should affect admission risk, and with
-  what weight.
+- Whether missing SBOM or errata coverage should affect evidence completeness,
+  confidence, risk, or only decision routing, and with what weight.
