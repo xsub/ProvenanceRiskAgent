@@ -32,6 +32,18 @@ detection, policy evaluation, and grounded synthesis. An LLM can help interpret
 intent and explain results, but it is not the authority for evidence, risk,
 completeness, confidence, or admission decisions.
 
+In this architecture, the agent behaves less like a chatbot and more like a
+specialized security officer for software supply-chain evidence. It investigates
+an artifact, verifies deterministic evidence, applies policy rules, identifies
+missing or contradictory facts, and produces a verdict. The verdict is not an
+unsupported model opinion: it must be backed by evidence records and rule
+results, with enough traceability for a human or downstream system to accept,
+review, or reject it.
+
+The policy layer plays the role of the rulebook: evidence is checked against
+explicit rules, and every material conclusion must cite the facts that support
+it.
+
 The scope is intentionally narrow: the agent sits above ALBS Provenance
 Explorer and EDGP, uses them as source engines, and presents their combined
 evidence through UI, REST, CLI, and MCP. It is not a generic chatbot and it
