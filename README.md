@@ -52,21 +52,35 @@ It demonstrates:
 ## Target Architecture
 
 ```mermaid
-flowchart LR
-  client["Browser / CLI / MCP client"];
-  api_service["FastAPI service"];
-  mcp_server["MCP server"];
-  workflow["LangGraph investigation workflow"];
-  planner["Intent parsing and investigation plan"];
-  adapter_tools["Controlled adapter tools"];
-  albs_engine["ALBS Provenance Explorer<br/>build, lineage, CAS, signatures"];
-  edgp_engine["EDGP<br/>dependencies, advisories, impact"];
-  evidence_records["Normalized evidence records"];
-  policy_engine["Deterministic policy and risk"];
-  assessment["Completeness and confidence"];
-  explainer["Grounded explanation<br/>LLM optional"];
-  response["Decision, findings, evidence IDs, trace"];
-  web_ui["Minimal web UI"];
+flowchart TD
+  subgraph clients["Clients"]
+    client["Browser / CLI / MCP client"];
+  end
+
+  subgraph entrypoints["Application entrypoints"]
+    web_ui["Minimal web UI"];
+    api_service["FastAPI service"];
+    mcp_server["MCP server"];
+  end
+
+  subgraph orchestration["Agent orchestration"]
+    workflow["LangGraph investigation workflow"];
+    planner["Intent parsing and investigation plan"];
+    adapter_tools["Controlled adapter tools"];
+  end
+
+  subgraph engines["Deterministic source engines"]
+    albs_engine["ALBS Provenance Explorer<br/>build, lineage, CAS, signatures"];
+    edgp_engine["EDGP<br/>dependencies, advisories, impact"];
+  end
+
+  subgraph assessment_layer["Evidence, policy, and explanation"]
+    evidence_records["Normalized evidence records"];
+    policy_engine["Deterministic policy and risk"];
+    assessment["Completeness and confidence"];
+    explainer["Grounded explanation<br/>LLM optional"];
+    response["Decision, findings, evidence IDs, trace"];
+  end
 
   client --> web_ui;
   client --> api_service;
