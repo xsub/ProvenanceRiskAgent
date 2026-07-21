@@ -163,22 +163,39 @@ investigations, and explain already-computed evidence.
 
 ## Workflow
 
-```text
-START
-  |
-load_export
-  |
-collect_evidence       deterministic
-  |
-score_risk             deterministic
-  |
-route_by_risk
-  |              \
-explain          request_review
-  |              /
-render_report
-  |
-END
+```mermaid
+flowchart TD
+  request(["Investigation request"]):::start;
+  load["Load and normalize export"]:::io;
+  facts["Collect verified facts<br/>coverage observations"]:::deterministic;
+  evidence["Collect risk evidence<br/>policy-relevant findings"]:::deterministic;
+  score["Score deterministic risk"]:::policy;
+  route{"Requires human review?"}:::decision;
+  explain["Generate grounded explanation<br/>LLM optional"]:::explain;
+  review["Request review<br/>future LangGraph interrupt"]:::review;
+  report["Render report<br/>facts, evidence, score, trace"]:::result;
+  done(["Workflow complete"]):::done;
+
+  request --> load;
+  load --> facts;
+  facts --> evidence;
+  evidence --> score;
+  score --> route;
+  route -- "no" --> explain;
+  route -- "yes" --> review;
+  explain --> report;
+  review --> report;
+  report --> done;
+
+  classDef start fill:#dbeafe,stroke:#2563eb,color:#0f172a,stroke-width:2px;
+  classDef io fill:#dcfce7,stroke:#16a34a,color:#052e16,stroke-width:2px;
+  classDef deterministic fill:#fef3c7,stroke:#d97706,color:#422006,stroke-width:2px;
+  classDef policy fill:#cffafe,stroke:#0891b2,color:#164e63,stroke-width:2px;
+  classDef decision fill:#ede9fe,stroke:#7c3aed,color:#2e1065,stroke-width:2px;
+  classDef explain fill:#fae8ff,stroke:#c026d3,color:#581c87,stroke-width:2px;
+  classDef review fill:#fee2e2,stroke:#dc2626,color:#450a0a,stroke-width:2px;
+  classDef result fill:#fce7f3,stroke:#db2777,color:#500724,stroke-width:2px;
+  classDef done fill:#e0f2fe,stroke:#0284c7,color:#082f49,stroke-width:2px;
 ```
 
 A later iteration can replace `request_review` with a LangGraph `interrupt()`
