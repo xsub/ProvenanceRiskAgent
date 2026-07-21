@@ -13,10 +13,11 @@ evidence, calculates deterministic risk and policy outputs, and uses an LLM
 only for optional explanation. The LLM never invents or modifies package facts,
 evidence records, risk scores, completeness, confidence, or decisions.
 
-## Wizja, zakres i cel
+## Vision, Scope, and Goal
 
-Wizja projektu jest prosta: Enterprise Linux supply-chain tools should expose
-an interface that matches how quickly modern investigations have to move.
+The project vision is straightforward: Enterprise Linux supply-chain tools
+should expose an interface that matches how quickly modern investigations have
+to move.
 ALBS Provenance Explorer and EDGP already provide strong deterministic
 capabilities, but their command-line surfaces have many commands, parameters,
 source contracts, and cross-tool combinations. Without an orchestration layer,
