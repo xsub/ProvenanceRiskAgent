@@ -78,6 +78,13 @@ The planning baseline is
 The educational build log is
 [`learning-process.md`](learning-process.md).
 
+The project overview is also available as an interactive HTML slide deck:
+
+[![View the HTML presentation](https://img.shields.io/badge/view-HTML_presentation-246BFD?logo=html5&logoColor=white)](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index.html)
+
+[View the presentation](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index.html)
+or [open its source](docs/presentation/index.html).
+
 ## What This Project Demonstrates
 
 It is deliberately not a generic chatbot.

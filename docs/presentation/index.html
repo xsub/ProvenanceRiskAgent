@@ -1,0 +1,2190 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Enterprise Linux Provenance Risk Agent - prezentacja</title>
+  <style>
+    :root {
+      --ink: #11151c;
+      --paper: #f7f9fb;
+      --white: #ffffff;
+      --muted: #657081;
+      --line: #d8dee7;
+      --blue: #246bfd;
+      --cyan: #1aa6b7;
+      --mint: #20ad82;
+      --yellow: #f6cc46;
+      --orange: #f47b42;
+      --coral: #e55168;
+      --violet: #7757d8;
+      --deep: #10151d;
+      --deep-2: #171e28;
+      --slide-w: 1600px;
+      --slide-h: 900px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #0a0e14;
+      color: var(--ink);
+      font-family: Inter, "SF Pro Display", "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    .deck {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #0a0e14;
+    }
+
+    .slide {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      display: none;
+      width: var(--slide-w);
+      height: var(--slide-h);
+      padding: 72px 86px 62px;
+      overflow: hidden;
+      background: var(--paper);
+      transform-origin: center center;
+      isolation: isolate;
+    }
+
+    .slide.is-active {
+      display: block;
+    }
+
+    .slide::after {
+      position: absolute;
+      right: 86px;
+      bottom: 30px;
+      color: #7c8796;
+      font-size: 16px;
+      font-weight: 700;
+      content: attr(data-number);
+    }
+
+    .slide::before {
+      position: absolute;
+      right: -170px;
+      bottom: -250px;
+      z-index: -1;
+      width: 520px;
+      height: 520px;
+      border: 1px solid rgba(36, 107, 253, 0.13);
+      border-radius: 50%;
+      content: "";
+    }
+
+    .slide--dark {
+      color: #f7f9fb;
+      background: var(--deep);
+    }
+
+    .slide--dark::after {
+      color: #7f8b9b;
+    }
+
+    .slide--dark::before {
+      border-color: rgba(246, 204, 70, 0.16);
+    }
+
+    .slide__topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 48px;
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .slide--dark .slide__topline {
+      color: #8895a5;
+    }
+
+    .brandline {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .brandmark {
+      display: inline-grid;
+      width: 32px;
+      height: 32px;
+      place-items: center;
+      color: #fff;
+      background: var(--blue);
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 26px;
+      font-size: 78px;
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      max-width: 1240px;
+      margin-bottom: 28px;
+      font-size: 52px;
+      line-height: 1.06;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin-bottom: 14px;
+      font-size: 27px;
+      line-height: 1.15;
+    }
+
+    p,
+    li,
+    td,
+    th {
+      font-size: 23px;
+      line-height: 1.42;
+    }
+
+    .lead {
+      max-width: 1080px;
+      color: #495567;
+      font-size: 31px;
+      line-height: 1.35;
+    }
+
+    .slide--dark .lead {
+      color: #aeb9c8;
+    }
+
+    .kicker {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: var(--blue);
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .mono {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .accent-blue { color: var(--blue); }
+    .accent-mint { color: var(--mint); }
+    .accent-yellow { color: var(--yellow); }
+    .accent-coral { color: var(--coral); }
+    .accent-violet { color: var(--violet); }
+
+    .rule {
+      width: 100%;
+      height: 1px;
+      margin: 32px 0;
+      background: var(--line);
+    }
+
+    .tag {
+      display: inline-flex;
+      gap: 9px;
+      align-items: center;
+      padding: 9px 13px;
+      border: 1px solid currentColor;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .tag__dot {
+      width: 8px;
+      height: 8px;
+      background: currentColor;
+      border-radius: 50%;
+    }
+
+    .source-note {
+      position: absolute;
+      bottom: 28px;
+      left: 86px;
+      max-width: 1200px;
+      color: #7c8796;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    /* Cover */
+    .cover {
+      padding-top: 82px;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        var(--deep);
+      background-size: 64px 64px;
+    }
+
+    .cover::before {
+      display: none;
+    }
+
+    .cover__layout {
+      display: grid;
+      grid-template-columns: 1.12fr 0.88fr;
+      gap: 70px;
+      align-items: center;
+      height: 650px;
+    }
+
+    .cover h1 {
+      max-width: 900px;
+      margin-bottom: 30px;
+      font-size: 80px;
+    }
+
+    .cover__subtitle {
+      max-width: 760px;
+      margin-bottom: 36px;
+      color: #b6c1ce;
+      font-size: 28px;
+      line-height: 1.4;
+    }
+
+    .cover__signature {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      color: #a8b4c2;
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .cover__signature::before {
+      width: 52px;
+      height: 3px;
+      background: var(--yellow);
+      content: "";
+    }
+
+    .evidence-map {
+      position: relative;
+      height: 610px;
+    }
+
+    .evidence-map__ring {
+      position: absolute;
+      top: 56px;
+      left: 35px;
+      width: 500px;
+      height: 500px;
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      border-radius: 50%;
+    }
+
+    .evidence-map__ring::before,
+    .evidence-map__ring::after {
+      position: absolute;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 50%;
+      content: "";
+    }
+
+    .evidence-map__ring::before {
+      inset: 62px;
+    }
+
+    .evidence-map__ring::after {
+      inset: 133px;
+    }
+
+    .evidence-map__core {
+      position: absolute;
+      top: 238px;
+      left: 219px;
+      display: grid;
+      width: 132px;
+      height: 132px;
+      place-items: center;
+      color: #11151c;
+      background: var(--yellow);
+      border-radius: 50%;
+      box-shadow: 0 0 0 18px rgba(246, 204, 70, 0.1);
+      font-size: 19px;
+      font-weight: 950;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .evidence-map__node {
+      position: absolute;
+      width: 154px;
+      padding: 15px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 5px;
+      background: #18212d;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.22);
+      color: #f7f9fb;
+      font-size: 16px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .evidence-map__node::after {
+      position: absolute;
+      width: 9px;
+      height: 9px;
+      background: var(--node-color);
+      border-radius: 50%;
+      content: "";
+    }
+
+    .evidence-map__node--source {
+      top: 22px;
+      left: 203px;
+      --node-color: var(--mint);
+    }
+
+    .evidence-map__node--source::after { bottom: -54px; left: 72px; }
+
+    .evidence-map__node--albs {
+      top: 222px;
+      left: 0;
+      --node-color: var(--blue);
+    }
+
+    .evidence-map__node--albs::after { top: 29px; right: -59px; }
+
+    .evidence-map__node--edgp {
+      top: 222px;
+      right: 0;
+      --node-color: var(--orange);
+    }
+
+    .evidence-map__node--edgp::after { top: 29px; left: -59px; }
+
+    .evidence-map__node--verdict {
+      bottom: 2px;
+      left: 203px;
+      --node-color: var(--coral);
+    }
+
+    .evidence-map__node--verdict::after { top: -54px; left: 72px; }
+
+    /* Problem */
+    .problem-grid {
+      display: grid;
+      grid-template-columns: 0.96fr 1.04fr;
+      gap: 70px;
+      align-items: stretch;
+      margin-top: 42px;
+    }
+
+    .terminal {
+      min-height: 485px;
+      padding: 24px 28px 28px;
+      border: 1px solid #303a48;
+      border-radius: 8px;
+      background: #131a23;
+      box-shadow: 0 22px 55px rgba(12, 19, 28, 0.17);
+      color: #dce4ed;
+    }
+
+    .terminal__bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 25px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid #303a48;
+    }
+
+    .terminal__bar span {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: #475363;
+    }
+
+    .terminal__bar span:nth-child(1) { background: var(--coral); }
+    .terminal__bar span:nth-child(2) { background: var(--yellow); }
+    .terminal__bar span:nth-child(3) { background: var(--mint); }
+
+    .terminal p {
+      margin-bottom: 17px;
+      color: #c9d3df;
+      font-size: 18px;
+      line-height: 1.55;
+    }
+
+    .terminal .prompt { color: var(--mint); }
+    .terminal .flag { color: #8fb2ff; }
+    .terminal .value { color: #f6d879; }
+    .terminal .faded { color: #6e7c8e; }
+
+    .operator-shift {
+      position: relative;
+      padding: 52px 48px;
+      border-left: 5px solid var(--blue);
+      background: #eef3ff;
+    }
+
+    .operator-shift__small {
+      margin-bottom: 28px;
+      color: var(--blue);
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .operator-shift__question {
+      margin-bottom: 46px;
+      font-size: 36px;
+      font-weight: 820;
+      line-height: 1.22;
+    }
+
+    .operator-shift__answer {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 20px;
+      align-items: start;
+      padding-top: 28px;
+      border-top: 1px solid #c8d6f4;
+    }
+
+    .operator-shift__answer strong {
+      color: var(--coral);
+      font-size: 58px;
+      line-height: 0.9;
+    }
+
+    .operator-shift__answer span {
+      color: #39485f;
+      font-size: 22px;
+      line-height: 1.45;
+    }
+
+    /* Officer model */
+    .officer-quote {
+      max-width: 1320px;
+      margin: 58px 0 64px;
+      font-size: 49px;
+      font-weight: 790;
+      line-height: 1.2;
+    }
+
+    .officer-quote .underline {
+      position: relative;
+      display: inline-block;
+    }
+
+    .officer-quote .underline::after {
+      position: absolute;
+      right: 0;
+      bottom: -6px;
+      left: 0;
+      height: 6px;
+      background: var(--yellow);
+      content: "";
+    }
+
+    .officer-flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0;
+      border-top: 1px solid #34404f;
+    }
+
+    .officer-flow__step {
+      position: relative;
+      padding: 30px 24px 0 0;
+    }
+
+    .officer-flow__step::before {
+      position: absolute;
+      top: -7px;
+      left: 0;
+      width: 13px;
+      height: 13px;
+      background: var(--step-color);
+      border-radius: 50%;
+      content: "";
+    }
+
+    .officer-flow__step strong {
+      display: block;
+      margin-bottom: 9px;
+      color: #fff;
+      font-size: 22px;
+    }
+
+    .officer-flow__step span {
+      color: #9eabba;
+      font-size: 17px;
+      line-height: 1.4;
+    }
+
+    /* Dependency landscape */
+    .landscape {
+      display: grid;
+      grid-template-columns: 1fr 100px 1.08fr 100px 0.94fr;
+      align-items: center;
+      min-height: 520px;
+      margin-top: 35px;
+    }
+
+    .engine {
+      min-height: 430px;
+      padding: 42px 38px;
+      border-top: 8px solid var(--engine-color);
+      background: var(--white);
+      box-shadow: 0 22px 55px rgba(24, 34, 48, 0.09);
+    }
+
+    .engine__label {
+      color: var(--engine-color);
+      font-size: 17px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .engine h3 {
+      margin: 16px 0 24px;
+      font-size: 32px;
+    }
+
+    .engine p {
+      color: #566173;
+      font-size: 20px;
+    }
+
+    .engine ul {
+      margin: 25px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .engine li {
+      position: relative;
+      margin: 13px 0;
+      padding-left: 23px;
+      color: #263243;
+      font-size: 18px;
+    }
+
+    .engine li::before {
+      position: absolute;
+      top: 10px;
+      left: 0;
+      width: 8px;
+      height: 8px;
+      background: var(--engine-color);
+      content: "";
+    }
+
+    .landscape__arrow {
+      color: #94a0af;
+      font-size: 54px;
+      font-weight: 300;
+      text-align: center;
+    }
+
+    .agent-engine {
+      min-height: 490px;
+      padding-top: 50px;
+      color: #fff;
+      background: var(--deep-2);
+      border-top-color: var(--yellow);
+    }
+
+    .agent-engine p { color: #b2becc; }
+    .agent-engine li { color: #edf1f6; }
+
+    /* ALBS chain */
+    .chain-layout {
+      display: grid;
+      grid-template-columns: 0.68fr 1.32fr;
+      gap: 72px;
+      align-items: center;
+      margin-top: 30px;
+    }
+
+    .chain-intro {
+      padding-right: 25px;
+    }
+
+    .chain-intro__statement {
+      margin: 28px 0 40px;
+      font-size: 35px;
+      font-weight: 780;
+      line-height: 1.28;
+    }
+
+    .chain-intro p:last-child {
+      color: #596576;
+      font-size: 20px;
+    }
+
+    .trust-chain {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 22px 18px;
+      padding: 42px;
+      background: #edf3ff;
+      border: 1px solid #d4e0fa;
+    }
+
+    .trust-chain::before {
+      position: absolute;
+      top: 50%;
+      left: 84px;
+      width: calc(100% - 168px);
+      height: 2px;
+      background: #adc4f4;
+      content: "";
+    }
+
+    .trust-chain__item {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      min-height: 128px;
+      padding: 18px 13px;
+      place-items: center;
+      border: 1px solid #b9cae9;
+      border-radius: 5px;
+      background: #fff;
+      box-shadow: 0 8px 23px rgba(38, 75, 142, 0.08);
+      text-align: center;
+    }
+
+    .trust-chain__item strong {
+      display: block;
+      color: #20314c;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .trust-chain__item span {
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .trust-chain__item:nth-child(2n) { transform: translateY(28px); }
+    .trust-chain__item:nth-child(2n + 1) { transform: translateY(-28px); }
+
+    /* EDGP graph */
+    .edgp-layout {
+      display: grid;
+      grid-template-columns: 1.08fr 0.92fr;
+      gap: 66px;
+      align-items: center;
+      margin-top: 34px;
+    }
+
+    .dependency-graph {
+      position: relative;
+      height: 525px;
+      overflow: hidden;
+      border: 1px solid #cde5e0;
+      background: #eef8f5;
+    }
+
+    .graph-line {
+      position: absolute;
+      z-index: 0;
+      height: 2px;
+      background: #92cbbd;
+      transform-origin: left center;
+    }
+
+    .graph-node {
+      position: absolute;
+      z-index: 1;
+      display: grid;
+      min-width: 136px;
+      min-height: 76px;
+      padding: 12px 16px;
+      place-items: center;
+      border: 2px solid var(--node);
+      border-radius: 38px;
+      background: #fff;
+      box-shadow: 0 9px 22px rgba(20, 86, 70, 0.1);
+      color: #213a34;
+      font-size: 16px;
+      font-weight: 850;
+      text-align: center;
+    }
+
+    .graph-node--root {
+      top: 202px;
+      left: 300px;
+      min-width: 185px;
+      min-height: 96px;
+      border-radius: 7px;
+      background: var(--mint);
+      color: #fff;
+      --node: var(--mint);
+    }
+
+    .graph-node--1 { top: 55px; left: 85px; --node: var(--blue); }
+    .graph-node--2 { top: 35px; right: 80px; --node: var(--orange); }
+    .graph-node--3 { top: 220px; left: 42px; --node: var(--violet); }
+    .graph-node--4 { top: 226px; right: 34px; --node: var(--coral); }
+    .graph-node--5 { bottom: 52px; left: 95px; --node: var(--yellow); }
+    .graph-node--6 { right: 96px; bottom: 50px; --node: var(--cyan); }
+
+    .graph-line--1 { top: 129px; left: 219px; width: 195px; transform: rotate(32deg); }
+    .graph-line--2 { top: 119px; left: 447px; width: 184px; transform: rotate(143deg); }
+    .graph-line--3 { top: 260px; left: 174px; width: 135px; transform: rotate(0deg); }
+    .graph-line--4 { top: 260px; left: 480px; width: 145px; transform: rotate(0deg); }
+    .graph-line--5 { top: 292px; left: 244px; width: 178px; transform: rotate(58deg); }
+    .graph-line--6 { top: 292px; left: 446px; width: 180px; transform: rotate(122deg); }
+
+    .edgp-points {
+      display: grid;
+      gap: 28px;
+    }
+
+    .edgp-point {
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      gap: 20px;
+      align-items: start;
+      padding-bottom: 22px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .edgp-point:last-child {
+      border-bottom: 0;
+    }
+
+    .edgp-point__number {
+      color: var(--mint);
+      font-size: 38px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .edgp-point strong {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 23px;
+    }
+
+    .edgp-point span {
+      color: #5e6a79;
+      font-size: 18px;
+      line-height: 1.4;
+    }
+
+    /* Responsibility matrix */
+    .boundary-table {
+      width: 100%;
+      margin-top: 48px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background: #fff;
+      box-shadow: 0 18px 46px rgba(20, 30, 44, 0.08);
+    }
+
+    .boundary-table th,
+    .boundary-table td {
+      padding: 22px 26px;
+      border-right: 1px solid #dde3eb;
+      border-bottom: 1px solid #dde3eb;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .boundary-table th:last-child,
+    .boundary-table td:last-child {
+      border-right: 0;
+    }
+
+    .boundary-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .boundary-table th {
+      color: #fff;
+      font-size: 21px;
+      font-weight: 900;
+    }
+
+    .boundary-table th:nth-child(1) { background: var(--blue); }
+    .boundary-table th:nth-child(2) { background: var(--mint); }
+    .boundary-table th:nth-child(3) { background: var(--deep-2); }
+
+    .boundary-table td {
+      color: #465365;
+      font-size: 18px;
+      line-height: 1.38;
+    }
+
+    .boundary-table td strong {
+      display: block;
+      margin-bottom: 5px;
+      color: #17202b;
+      font-size: 19px;
+    }
+
+    .boundary-callout {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      margin-top: 34px;
+      color: #334055;
+      font-size: 22px;
+      font-weight: 740;
+    }
+
+    .boundary-callout::before {
+      width: 46px;
+      height: 5px;
+      background: var(--yellow);
+      content: "";
+    }
+
+    /* Workflow */
+    .workflow {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 18px;
+      margin-top: 80px;
+      padding-top: 22px;
+    }
+
+    .workflow::before {
+      position: absolute;
+      top: 31px;
+      right: 88px;
+      left: 88px;
+      height: 3px;
+      background: #cad3df;
+      content: "";
+    }
+
+    .workflow__step {
+      position: relative;
+      padding-top: 54px;
+      text-align: center;
+    }
+
+    .workflow__dot {
+      position: absolute;
+      top: 0;
+      left: calc(50% - 13px);
+      z-index: 1;
+      width: 26px;
+      height: 26px;
+      border: 6px solid var(--paper);
+      outline: 3px solid var(--step);
+      background: var(--step);
+      border-radius: 50%;
+    }
+
+    .workflow__step strong {
+      display: block;
+      min-height: 58px;
+      margin-bottom: 10px;
+      color: #182231;
+      font-size: 19px;
+      line-height: 1.25;
+    }
+
+    .workflow__step span {
+      color: #687485;
+      font-size: 16px;
+      line-height: 1.38;
+    }
+
+    .workflow-branch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      width: 740px;
+      margin: 78px auto 0;
+    }
+
+    .workflow-branch__path {
+      padding: 25px 30px;
+      border-top: 5px solid var(--path);
+      background: #fff;
+      box-shadow: 0 12px 30px rgba(20, 30, 44, 0.08);
+    }
+
+    .workflow-branch__path strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #192330;
+      font-size: 21px;
+    }
+
+    .workflow-branch__path span {
+      color: #647081;
+      font-size: 17px;
+    }
+
+    /* Case study */
+    .case-grid {
+      display: grid;
+      grid-template-columns: 0.82fr 1.18fr;
+      gap: 68px;
+      align-items: center;
+      margin-top: 32px;
+    }
+
+    .verdict {
+      position: relative;
+      min-height: 525px;
+      padding: 46px;
+      overflow: hidden;
+      background: var(--deep-2);
+      color: #fff;
+    }
+
+    .verdict::after {
+      position: absolute;
+      right: -78px;
+      bottom: -92px;
+      width: 290px;
+      height: 290px;
+      border: 54px solid rgba(229, 81, 104, 0.13);
+      border-radius: 50%;
+      content: "";
+    }
+
+    .verdict__artifact {
+      color: #9dabbc;
+      font-size: 18px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .verdict h3 {
+      margin: 16px 0 32px;
+      font-size: 38px;
+    }
+
+    .verdict__score {
+      display: flex;
+      gap: 18px;
+      align-items: baseline;
+      margin-bottom: 12px;
+    }
+
+    .verdict__score strong {
+      color: var(--yellow);
+      font-size: 110px;
+      line-height: 0.9;
+    }
+
+    .verdict__score span {
+      color: #9eabba;
+      font-size: 25px;
+    }
+
+    .verdict__bar {
+      width: 100%;
+      height: 12px;
+      margin: 24px 0 34px;
+      overflow: hidden;
+      background: #323c49;
+      border-radius: 2px;
+    }
+
+    .verdict__bar span {
+      display: block;
+      width: 85%;
+      height: 100%;
+      background: var(--coral);
+    }
+
+    .verdict__state {
+      display: inline-block;
+      padding: 11px 16px;
+      color: #fff;
+      background: var(--coral);
+      border-radius: 4px;
+      font-size: 24px;
+      font-weight: 950;
+    }
+
+    .verdict__note {
+      max-width: 390px;
+      margin-top: 25px;
+      color: #aeb9c8;
+      font-size: 18px;
+      line-height: 1.4;
+    }
+
+    .finding-stack {
+      display: grid;
+      gap: 26px;
+    }
+
+    .finding {
+      display: grid;
+      grid-template-columns: 126px 1fr;
+      min-height: 178px;
+      overflow: hidden;
+      border: 1px solid #d9e0e9;
+      background: #fff;
+      box-shadow: 0 13px 32px rgba(18, 30, 45, 0.08);
+    }
+
+    .finding__weight {
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: var(--finding);
+      font-size: 35px;
+      font-weight: 950;
+    }
+
+    .finding__body {
+      padding: 26px 30px;
+    }
+
+    .finding__code {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--finding);
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .finding__body strong {
+      display: block;
+      margin-bottom: 7px;
+      color: #202b39;
+      font-size: 23px;
+    }
+
+    .finding__body span {
+      color: #667284;
+      font-size: 17px;
+      line-height: 1.4;
+    }
+
+    /* Three dimensions */
+    .dimensions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 36px;
+      margin-top: 56px;
+    }
+
+    .dimension {
+      position: relative;
+      min-height: 380px;
+      padding: 40px 36px 34px;
+      overflow: hidden;
+      border-top: 9px solid var(--dimension);
+      background: #fff;
+      box-shadow: 0 18px 45px rgba(19, 31, 47, 0.08);
+    }
+
+    .dimension__number {
+      display: block;
+      margin-bottom: 25px;
+      color: var(--dimension);
+      font-size: 62px;
+      font-weight: 950;
+      line-height: 1;
+    }
+
+    .dimension h3 {
+      font-size: 29px;
+    }
+
+    .dimension p {
+      color: #566274;
+      font-size: 20px;
+    }
+
+    .dimension__trap {
+      position: absolute;
+      right: 32px;
+      bottom: 28px;
+      left: 36px;
+      padding-top: 16px;
+      border-top: 1px solid #e0e5ec;
+      color: #303c4d;
+      font-size: 17px;
+      font-weight: 760;
+    }
+
+    .dimensions-thesis {
+      margin-top: 34px;
+      color: #2f3c4e;
+      font-size: 25px;
+      font-weight: 780;
+      text-align: center;
+    }
+
+    /* LLM boundary */
+    .llm-layout {
+      display: grid;
+      grid-template-columns: 1.18fr 0.82fr;
+      gap: 64px;
+      align-items: center;
+      margin-top: 40px;
+    }
+
+    .authority-stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .authority-layer {
+      display: grid;
+      grid-template-columns: 215px 1fr;
+      min-height: 92px;
+      align-items: center;
+      border-left: 8px solid var(--layer);
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(18, 30, 45, 0.07);
+    }
+
+    .authority-layer strong {
+      padding: 0 28px;
+      color: var(--layer);
+      font-size: 20px;
+    }
+
+    .authority-layer span {
+      padding-right: 28px;
+      color: #4e5a6b;
+      font-size: 18px;
+      line-height: 1.38;
+    }
+
+    .llm-thesis {
+      padding: 52px 44px;
+      border: 1px solid #303a48;
+      background: var(--deep-2);
+      color: #fff;
+    }
+
+    .llm-thesis__overline {
+      color: var(--yellow);
+      font-size: 17px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .llm-thesis blockquote {
+      margin: 22px 0 30px;
+      font-size: 39px;
+      font-weight: 820;
+      line-height: 1.2;
+    }
+
+    .llm-thesis p {
+      margin-bottom: 0;
+      color: #aeb9c8;
+      font-size: 19px;
+    }
+
+    /* Stack */
+    .stack-layout {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 72px;
+      align-items: start;
+      margin-top: 36px;
+    }
+
+    .run-command {
+      padding: 40px 42px;
+      background: var(--deep-2);
+      color: #fff;
+      box-shadow: 0 20px 50px rgba(15, 23, 34, 0.16);
+    }
+
+    .run-command__label {
+      margin-bottom: 18px;
+      color: var(--mint);
+      font-size: 17px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .run-command code {
+      display: block;
+      margin-bottom: 30px;
+      color: #f7f9fb;
+      font-size: 25px;
+      line-height: 1.5;
+    }
+
+    .run-command p {
+      color: #aeb9c8;
+      font-size: 19px;
+    }
+
+    .status-line {
+      display: flex;
+      gap: 11px;
+      align-items: center;
+      margin-top: 28px;
+      color: #d7e1eb;
+      font-size: 17px;
+      font-weight: 750;
+    }
+
+    .status-line::before {
+      width: 11px;
+      height: 11px;
+      background: var(--mint);
+      border-radius: 50%;
+      box-shadow: 0 0 0 7px rgba(32, 173, 130, 0.12);
+      content: "";
+    }
+
+    .stack-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-top: 1px solid var(--line);
+      border-left: 1px solid var(--line);
+    }
+
+    .stack-item {
+      min-height: 103px;
+      padding: 20px 24px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .stack-item strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #202a38;
+      font-size: 19px;
+    }
+
+    .stack-item span {
+      color: #677384;
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .deferred {
+      margin-top: 30px;
+      padding: 21px 25px;
+      border-left: 5px solid var(--orange);
+      background: #fff4ec;
+      color: #5d4639;
+      font-size: 18px;
+      line-height: 1.42;
+    }
+
+    /* Roadmap */
+    .roadmap-layout {
+      display: grid;
+      grid-template-columns: 0.72fr 1.28fr;
+      gap: 82px;
+      align-items: center;
+      margin-top: 30px;
+    }
+
+    .roadmap-thesis {
+      padding-right: 24px;
+    }
+
+    .roadmap-thesis__big {
+      display: block;
+      margin: 26px 0 28px;
+      color: var(--yellow);
+      font-size: 57px;
+      font-weight: 900;
+      line-height: 1.08;
+    }
+
+    .roadmap-thesis p {
+      color: #aab6c4;
+      font-size: 20px;
+    }
+
+    .roadmap {
+      position: relative;
+      display: grid;
+      gap: 12px;
+      padding-left: 44px;
+    }
+
+    .roadmap::before {
+      position: absolute;
+      top: 24px;
+      bottom: 24px;
+      left: 11px;
+      width: 2px;
+      background: #384453;
+      content: "";
+    }
+
+    .roadmap__item {
+      position: relative;
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      gap: 18px;
+      align-items: center;
+      min-height: 84px;
+      padding: 15px 24px;
+      background: #18212c;
+    }
+
+    .roadmap__item::before {
+      position: absolute;
+      top: calc(50% - 7px);
+      left: -40px;
+      width: 14px;
+      height: 14px;
+      background: var(--road);
+      border-radius: 50%;
+      box-shadow: 0 0 0 7px rgba(255, 255, 255, 0.035);
+      content: "";
+    }
+
+    .roadmap__number {
+      color: var(--road);
+      font-size: 27px;
+      font-weight: 950;
+    }
+
+    .roadmap__item strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #f4f7fa;
+      font-size: 20px;
+    }
+
+    .roadmap__item span {
+      color: #9ca9b8;
+      font-size: 16px;
+    }
+
+    /* Close */
+    .close {
+      display: grid;
+      place-items: center;
+      padding: 72px 140px;
+      text-align: center;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        var(--deep);
+      background-size: 64px 64px;
+    }
+
+    .close::before {
+      display: none;
+    }
+
+    .close__eyebrow {
+      margin-bottom: 28px;
+      color: var(--mint);
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .close h2 {
+      max-width: 1150px;
+      margin: 0 auto 35px;
+      font-size: 64px;
+      line-height: 1.08;
+    }
+
+    .close__formula {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 46px;
+      color: #bdc8d5;
+      font-size: 24px;
+      font-weight: 760;
+    }
+
+    .close__formula strong {
+      color: var(--yellow);
+      font-size: 38px;
+    }
+
+    .close__command {
+      display: inline-block;
+      padding: 19px 25px;
+      border: 1px solid #3c4857;
+      background: #171f29;
+      color: #f4f7fa;
+      font-size: 21px;
+    }
+
+    .close__sources {
+      position: absolute;
+      right: 140px;
+      bottom: 42px;
+      left: 140px;
+      color: #778596;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    /* Controls */
+    .deck-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 50;
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .deck-progress__fill {
+      width: 0;
+      height: 100%;
+      background: var(--yellow);
+      transition: width 180ms ease;
+    }
+
+    .deck-controls {
+      position: fixed;
+      right: 22px;
+      bottom: 20px;
+      z-index: 80;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      background: rgba(12, 17, 24, 0.88);
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(14px);
+    }
+
+    .deck-controls button {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      place-items: center;
+      border: 1px solid #384453;
+      border-radius: 5px;
+      background: #1a222d;
+      color: #dfe7ef;
+      cursor: pointer;
+      font-size: 23px;
+      line-height: 1;
+    }
+
+    .deck-controls button:hover,
+    .deck-controls button:focus-visible {
+      border-color: var(--yellow);
+      color: var(--yellow);
+      outline: none;
+    }
+
+    .deck-controls button:disabled {
+      cursor: default;
+      opacity: 0.35;
+    }
+
+    .deck-counter {
+      min-width: 70px;
+      color: #aeb9c8;
+      font-size: 14px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .overview {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      align-content: start;
+      padding: 42px;
+      overflow: auto;
+      background: #0b1017;
+    }
+
+    .overview.is-open {
+      display: grid;
+    }
+
+    .overview__item {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      padding: 0;
+      overflow: hidden;
+      border: 2px solid #2e3947;
+      border-radius: 6px;
+      background: #111821;
+      cursor: pointer;
+    }
+
+    .overview__item:hover,
+    .overview__item:focus-visible {
+      border-color: var(--yellow);
+      outline: none;
+    }
+
+    .overview__item .slide {
+      top: 0;
+      left: 0;
+      display: block;
+      pointer-events: none;
+      transform-origin: top left;
+    }
+
+    .overview__label {
+      position: absolute;
+      right: 10px;
+      bottom: 9px;
+      z-index: 3;
+      padding: 4px 8px;
+      border-radius: 3px;
+      background: rgba(0, 0, 0, 0.72);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    @media (max-width: 760px) {
+      .deck-controls {
+        right: 10px;
+        bottom: 10px;
+      }
+
+      .deck-controls button {
+        width: 38px;
+        height: 38px;
+      }
+
+      .overview {
+        grid-template-columns: 1fr;
+        padding: 18px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+
+    @media print {
+      @page {
+        size: 16in 9in;
+        margin: 0;
+      }
+
+      html,
+      body,
+      .deck {
+        width: auto;
+        height: auto;
+        overflow: visible;
+        background: #fff;
+      }
+
+      .slide {
+        position: relative;
+        top: auto;
+        left: auto;
+        display: block !important;
+        width: 1600px;
+        height: 900px;
+        page-break-after: always;
+        transform: scale(0.72) !important;
+        transform-origin: top left;
+      }
+
+      .deck-controls,
+      .deck-progress,
+      .overview {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck" id="deck" aria-live="polite">
+    <section class="slide slide--dark cover" data-number="01 / 13" data-title="Tytuł">
+      <div class="cover__layout">
+        <div>
+          <span class="kicker accent-yellow">Software supply-chain evidence</span>
+          <h1>Enterprise Linux<br>Provenance<br>Risk Agent</h1>
+          <p class="cover__subtitle">Agent, który prowadzi dochodzenie w dowodach ALBS i EDGP, a następnie wydaje werdykt możliwy do sprawdzenia.</p>
+          <div class="cover__signature">Dowody zamiast modelowej opinii</div>
+        </div>
+        <div class="evidence-map" aria-label="Schemat źródła, silniki dowodowe i werdykt">
+          <div class="evidence-map__ring"></div>
+          <div class="evidence-map__core">policy<br>rules</div>
+          <div class="evidence-map__node evidence-map__node--source">Enterprise Linux artifact</div>
+          <div class="evidence-map__node evidence-map__node--albs">ALBS provenance</div>
+          <div class="evidence-map__node evidence-map__node--edgp">EDGP graph evidence</div>
+          <div class="evidence-map__node evidence-map__node--verdict">Auditable verdict</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-number="02 / 13" data-title="Problem operatora">
+      <div class="slide__topline">
+        <div class="brandline"><span class="brandmark">PR</span> Problem</div>
+        <span>Vision, scope &amp; goal</span>
+      </div>
+      <h2>Bez warstwy orkiestracji człowiek staje się agentem obsługującym narzędzia</h2>
+      <div class="problem-grid">
+        <div class="terminal mono" aria-label="Przykładowe złożone komendy CLI">
+          <div class="terminal__bar"><span></span><span></span><span></span></div>
+          <p><span class="prompt">$</span> albs-graph trust <span class="flag">--build-id</span> <span class="value">17812</span><br><span class="flag">--package</span> nginx-core <span class="flag">--arch</span> x86_64</p>
+          <p><span class="prompt">$</span> edgp rpm-albs-provenance<br><span class="flag">--build-id</span> <span class="value">17812</span> <span class="flag">--rpm-limit</span> <span class="value">200</span></p>
+          <p><span class="prompt">$</span> edgp public-advisory-feed<br><span class="flag">--path</span> osv.json <span class="flag">--ecosystem</span> rpm</p>
+          <p class="faded"># połącz tożsamości, oceń braki, zastosuj reguły, zachowaj ślad...</p>
+        </div>
+        <div class="operator-shift">
+          <div class="operator-shift__small">Docelowy interfejs</div>
+          <p class="operator-shift__question">„Dlaczego ten artefakt jest ryzykowny i czy mamy dość dowodów, by zaufać decyzji?”</p>
+          <div class="operator-shift__answer">
+            <strong>1</strong>
+            <span>Pytanie uruchamia ograniczone dochodzenie, łączy dowody i pokazuje, które fakty doprowadziły do werdyktu.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide slide--dark" data-number="03 / 13" data-title="Model agenta">
+      <div class="slide__topline">
+        <div class="brandline"><span class="brandmark">PR</span> Rola agenta</div>
+        <span>Security officer, not chatbot</span>
+      </div>
+      <span class="kicker accent-yellow">Główna teza</span>
+      <div class="officer-quote">Agent zachowuje się mniej jak chatbot, a bardziej jak <span class="underline">wyspecjalizowany oficer bezpieczeństwa</span> dla dowodów łańcucha dostaw.</div>
+      <div class="officer-flow">
+        <div class="officer-flow__step" style="--step-color:var(--blue)">
+          <strong>Investigate</strong>
+          <span>Rozwiązuje tożsamość artefaktu i planuje zakres.</span>
+        </div>
+        <div class="officer-flow__step" style="--step-color:var(--mint)">
+          <strong>Verify</strong>
+          <span>Sprawdza deterministyczne rekordy źródłowe.</span>
+        </div>
+        <div class="officer-flow__step" style="--step-color:var(--yellow)">
+          <strong>Apply rules</strong>
+          <span>Porównuje fakty z jawnym rulebookiem.</span>
+        </div>
+        <div class="officer-flow__step" style="--step-color:var(--orange)">
+          <strong>Challenge</strong>
+          <span>Wykrywa braki, sprzeczności i awarie źródeł.</span>
+        </div>
+        <div class="officer-flow__step" style="--step-color:var(--coral)">
+          <strong>Verdict</strong>
+          <span>Cytuje fakty, które wspierają każdy istotny wniosek.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-number="04 / 13" data-title="Trzy warstwy">
+      <div class="slide__topline">
+        <div class="brandline"><span class="brandmark">PR</span> Zależności projektu</div>
+        <span>Two engines, one investigation</span>
+      </div>
+      <h2>Dwa silniki dostarczają dowodów. Agent nadaje im wspólny język decyzji.</h2>
+      <div class="landscape">
+        <article class="engine" style="--engine-color:var(--blue)">
+          <span class="engine__label">Źródło prawdy #1</span>
+          <h3>ALBS Provenance Explorer</h3>
+          <p>Skąd artefakt pochodzi i czy jego ścieżka zaufania jest kompletna?</p>
+          <ul>
+            <li>build i lineage</li>
+            <li>CAS i integralność</li>
+            <li>podpisy i release</li>
+            <li>SBOM, errata, CVE context</li>
+          </ul>
+        </article>
+        <div class="landscape__arrow" aria-hidden="true">→</div>
+        <article class="engine agent-engine" style="--engine-color:var(--yellow)">
+          <span class="engine__label">Warstwa produktu</span>
+          <h3>Provenance Risk Agent</h3>
+          <p>Łączy fakty, ocenia policy/risk/completeness/confidence i zachowuje pełny trace.</p>
+          <ul>
+            <li>typed adapters</li>
+            <li>bounded LangGraph workflow</li>
+            <li>deterministyczny rulebook</li>
+            <li>REST, UI, CLI, przyszłe MCP</li>
+          </ul>
+        </article>
+        <div class="landscape__arrow" aria-hidden="true">←</div>
+        <article class="engine" style="--engine-color:var(--mint)">
+          <span class="engine__label">Źródło prawdy #2</span>
+          <h3>EDGP</h3>
+          <p>Jak artefakt łączy się z resztą ekosystemu i jaki jest jego wpływ?</p>
+          <ul>
+            <li>dependency graph i paths</li>
+            <li>reverse dependencies</li>
+            <li>advisories i impact</li>
+            <li>RPM ↔ ALBS joins</li>
+          </ul>
+        </article>
+      </div>
+      <div class="source-note">Kontrakty wejściowe MVP: <span class="mono">albs-provenance-explorer/v1</span>, <span class="mono">edgp.rpm.albs_provenance.v1</span>, <span class="mono">edgp.albs.artifact_inventory.v1</span>, <span class="mono">edgp.graph.snapshot.v1</span>.</div>
+    </section>
+
+    <section class="slide" data-number="05 / 13" data-title="ALBS">
+      <div class="slide__topline">
+        <div class="brandline"><span class="brandmark">AL</span> ALBS Provenance Explorer</div>
+        <span>Provenance backbone</span>
+      </div>
+      <h2>ALBS odpowiada na pytanie: „czy potrafimy udowodnić drogę od źródła do wydanego RPM?”</h2>
+      <div class="chain-layout">
+        <div class="chain-intro">
+          <span class="tag accent-blue"><span class="tag__dot"></span> Read-only evidence engine</span>
+          <div class="chain-intro__statement">Buduje graf pochodzenia nad ALBS, RPM, SBOM, CAS, podpisami i erratami.</div>
+          <p>Agent nie kopiuje tej logiki. Konsumuje wersjonowany eksport i interpretuje jego relacje jako dowody dla reguł polityki.</p>
+        </div>
+        <div class="trust-chain" aria-label="Ścieżka zaufania ALBS">
+          <div class="trust-chain__item"><span>01</span><strong>Source package</strong></div>
+          <div class="trust-chain__item"><span>02</span><strong>Exact git commit</strong></div>
+          <div class="trust-chain__item"><span>03</span><strong>Source CAS attestation</strong></div>
+          <div class="trust-chain__item"><span>04</span><strong>ALBS build task</strong></div>
+          <div class="trust-chain__item"><span>05</span><strong>SRPM / binary RPM</strong></div>
+          <div class="trust-chain__item"><span>06</span><strong>Artifact CAS</strong></div>
+          <div class="trust-chain__item"><span>07</span><strong>Signature</strong></div>
+          <div class="trust-chain__item"><span>08</span><strong>Repository release</strong></div>
+        </div>
+      </div>
+      <div class="source-note">Zakres na podstawie lokalnego projektu <span class="mono">albs-provenance-explorer</span> i kontraktu <span class="mono">albs-provenance-explorer/v1</span>.</div>
+    </section>
+
+    <section class="slide" data-number="06 / 13" data-title="EDGP">
+      <div class="slide__topline">
+        <div class="brandline"><span class="brandmark" style="background:var(--mint)">ED</span> Enterprise Dependency Graph Pipeline</div>
+        <span>Dependency &amp; impact intelligence</span>
+      </div>
+      <h2>EDGP odpowiada na pytanie: „co jest połączone z artefaktem i jaki będzie skutek problemu?”</h2>
+      <div class="edgp-layout">
+        <div class="dependency-graph" aria-label="Graf zależności EDGP">
+          <div class="graph-line graph-line--1"></div>
+          <div class="graph-line graph-line--2"></div>
+          <div class="graph-line graph-line--3"></div>
+          <div class="graph-line graph-line--4"></div>
+          <div class="graph-line graph-line--5"></div>
+          <div class="graph-line graph-line--6"></div>
+          <div class="graph-node graph-node--root">nginx-core<br>1.20.1</div>
+          <div class="graph-node graph-node--1">openssl-libs</div>
+          <div class="graph-node graph-node--2">glibc</div>
+          <div class="graph-node graph-node--3">repository</div>
+          <div class="graph-node graph-node--4">advisory</div>
+          <div class="graph-node graph-node--5">reverse deps</div>
+          <div class="graph-node graph-node--6">ALBS artifact</div>
+        </div>
+        <div class="edgp-points">
+          <div class="edgp-point"><span class="edgp-point__number">01</span><div><strong>Buduje i przechowuje graf</strong><span>CSR-backed topology dla dużych zbiorów zależności.</span></div></div>
+          <div class="edgp-point"><span class="edgp-point__number">02</span><div><strong>Odpytuje relacje i ścieżki</strong><span>Reachability, dependents, shortest paths, blast radius.</span></div></div>
+          <div class="edgp-point"><span class="edgp-point__number">03</span><div><strong>Wzbogaca o security context</strong><span>Advisory overlays, repo diffs, SBOM i impact reports.</span></div></div>
+          <div class="edgp-point"><span class="edgp-point__number">04</span><div><strong>Łączy hosta z buildem</strong><span>Installed RPM ↔ ALBS artifact, build ID, release ID i CAS hash.</span></div></div>
+        </div>
+      </div>
+      <div class="source-note">Zakres na podstawie lokalnego projektu <span class="mono">Enterprise Dependency Graph Pipeline</span> i publicznych kontraktów eksportu EDGP.</div>
+    </section>
+
+    <section class="slide" data-number="07 / 13" data-title="Podział odpowiedzialności">
+      <div class="slide__topline">
+        <div class="brandline"><span class="brandmark">PR</span> Granice systemu</div>
+        <span>Clear ownership</span>
+      </div>
+      <h2>Każdy komponent robi to, w czym jest autorytatywny</h2>
+      <table class="boundary-table" aria-label="Podział odpowiedzialności między ALBS, EDGP i agentem">
+        <thead>
+          <tr>
+            <th>ALBS Provenance Explorer</th>
+            <th>EDGP</th>
+            <th>Provenance Risk Agent</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Buduje dowód pochodzenia</strong>Źródło, commit, build task, RPM, podpis, CAS i release.</td>
+            <td><strong>Buduje dowód relacji</strong>Zależności, ścieżki, repozytoria, advisories i impact.</td>
+            <td><strong>Prowadzi dochodzenie</strong>Rozumie pytanie, wybiera narzędzia i utrzymuje stan.</td>
+          </tr>
+          <tr>
+            <td><strong>Wykrywa braki trust path</strong>Niekompletna sygnatura, CAS, build lub release.</td>
+            <td><strong>Wylicza zasięg</strong>Reverse dependencies, blast radius i różnice snapshotów.</td>
+            <td><strong>Normalizuje i łączy</strong>Tworzy evidence records o stabilnym znaczeniu.</td>
+          </tr>
+          <tr>
+            <td><strong>Eksportuje wersjonowany graf</strong>Nie podejmuje decyzji produktowej za agenta.</td>
+            <td><strong>Eksportuje deterministyczne raporty</strong>Nie interpretuje globalnej polityki decyzji.</td>
+            <td><strong>Stosuje rulebook i wydaje werdykt</strong>Risk, completeness, confidence, decision i trace.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="boundary-callout">Agent nie zastępuje silników. Zamienia ich wyniki w spójny, audytowalny proces decyzyjny.</div>
+    </section>
+
+    <section class="slide" data-number="08 / 13" data-title="Workflow">
+      <div class="slide__topline">
+        <div class="brandline"><span class="brandmark">PR</span> LangGraph workflow</div>
+        <span>Bounded investigation</span>
+      </div>
+      <h2>Dochodzenie jest automatem stanów, nie ukrytą rozmową z modelem</h2>
+      <div class="workflow" aria-label="Kroki workflow agenta">
+        <div class="workflow__step" style="--step:var(--blue)"><span class="workflow__dot"></span><strong>Load</strong><span>Wczytaj i zwaliduj eksport.</span></div>
+        <div class="workflow__step" style="--step:var(--cyan)"><span class="workflow__dot"></span><strong>Normalize</strong><span>Ujednolić tożsamość i kontrakty.</span></div>
+        <div class="workflow__step" style="--step:var(--mint)"><span class="workflow__dot"></span><strong>Collect facts</strong><span>Zapisz pokrycie i fakty zweryfikowane.</span></div>
+        <div class="workflow__step" style="--step:var(--yellow)"><span class="workflow__dot"></span><strong>Collect risk evidence</strong><span>Uruchom jawne checki źródłowe.</span></div>
+        <div class="workflow__step" style="--step:var(--orange)"><span class="workflow__dot"></span><strong>Apply policy</strong><span>Policz risk i reliability.</span></div>
+        <div class="workflow__step" style="--step:var(--violet)"><span class="workflow__dot"></span><strong>Route</strong><span>ALLOW, REVIEW, UNKNOWN lub ERROR.</span></div>
+        <div class="workflow__step" style="--step:var(--coral)"><span class="workflow__dot"></span><strong>Report</strong><span>Werdykt, evidence IDs i trace.</span></div>
+      </div>
+      <div class="workflow-branch">
+        <div class="workflow-branch__path" style="--path:var(--mint)"><strong>Dowody wystarczające</strong><span>Deterministyczne wyjaśnienie i gotowy raport.</span></div>
+        <div class="workflow-branch__path" style="--path:var(--coral)"><strong>Braki lub wysoki risk</strong><span>Jawne skierowanie do human review.</span></div>
+      </div>
+    </section>
+
+    <section class="slide" data-number="09 / 13" data-title="Przykładowy werdykt">
+      <div class="slide__topline">
+        <div class="brandline"><span class="brandmark">PR</span> Curated MVP case</div>
+        <span>nginx-core / combined evidence</span>
+      </div>
+      <h2>Jeden artefakt, dwa źródła, jeden werdykt z pełnym uzasadnieniem</h2>
+      <div class="case-grid">
+        <article class="verdict">
+          <span class="verdict__artifact">nginx-core 1.20.1-16.el9_4.1</span>
+          <h3>Deterministic risk</h3>
+          <div class="verdict__score"><strong>85</strong><span>/ 100 · critical</span></div>
+          <div class="verdict__bar"><span></span></div>
+          <span class="verdict__state">REVIEW</span>
+          <p class="verdict__note">Wynik nie kończy się na liczbie. Zawiera fakty, findingi, źródła pól i sekwencję zdarzeń.</p>
+        </article>
+        <div class="finding-stack">
+          <article class="finding" style="--finding:var(--blue)">
+            <div class="finding__weight">+40</div>
+            <div class="finding__body">
+              <span class="finding__code mono">ALBS_SIGNATURE_MISSING</span>
+              <strong>Brak dowodu podpisu wydanego RPM</strong>
+              <span>Źródło: relacja <span class="mono">signed_as</span> w grafie ALBS.</span>
+            </div>
+          </article>
+          <article class="finding" style="--finding:var(--mint)">
+            <div class="finding__weight">+45</div>
+            <div class="finding__body">
+              <span class="finding__code mono">EDGP_RPM_ALBS_UNMATCHED_PACKAGES</span>
+              <strong>1 z 2 zainstalowanych RPM nie ma dopasowania do artefaktu ALBS</strong>
+              <span>Źródło: <span class="mono">summary</span> i <span class="mono">unmatchedInstalledPackages</span>.</span>
+            </div>
+          </article>
+        </div>
+      </div>
+      <div class="source-note">Wynik z bieżącego fixture <span class="mono">examples/albs-edgp-risk-case.json</span>; score = min(100, suma wag findingów).</div>
+    </section>
+
+    <section class="slide" data-number="10 / 13" data-title="Model decyzji">
+      <div class="slide__topline">
+        <div class="brandline"><span class="brandmark">PR</span> Decision model</div>
+        <span>Three independent dimensions</span>
+      </div>
+      <h2>Brak findingów nie oznacza bezpieczeństwa, jeśli brakuje materiału dowodowego</h2>
+      <div class="dimensions">
+        <article class="dimension" style="--dimension:var(--coral)">
+          <span class="dimension__number">01</span>
+          <h3>Risk</h3>
+          <p>Jak poważne są deterministyczne findingi i jaka jest ich łączna waga?</p>
+          <div class="dimension__trap">Odpowiada na: „co znaleźliśmy?”</div>
+        </article>
+        <article class="dimension" style="--dimension:var(--blue)">
+          <span class="dimension__number">02</span>
+          <h3>Completeness</h3>
+          <p>Czy wymagane kategorie dowodów są obecne i czy badanie objęło właściwy zakres?</p>
+          <div class="dimension__trap">Odpowiada na: „czego nie sprawdziliśmy?”</div>
+        </article>
+        <article class="dimension" style="--dimension:var(--mint)">
+          <span class="dimension__number">03</span>
+          <h3>Confidence</h3>
+          <p>Jak mocno można ufać wynikowi po uwzględnieniu braków, sprzeczności i błędów źródeł?</p>
+          <div class="dimension__trap">Odpowiada na: „jak pewny jest werdykt?”</div>
+        </article>
+      </div>
+      <div class="dimensions-thesis">Niski risk + niska completeness ≠ dowód bezpieczeństwa. Taki przypadek prowadzi do <span class="accent-violet">UNKNOWN</span> lub <span class="accent-coral">REVIEW</span>.</div>
+    </section>
+
+    <section class="slide" data-number="11 / 13" data-title="Granica LLM">
+      <div class="slide__topline">
+        <div class="brandline"><span class="brandmark">PR</span> Optional LLM layer</div>
+        <span>Agentic without model authority</span>
+      </div>
+      <h2>Opcjonalny LLM nie umniejsza agentowości. Oddziela komunikację od autorytetu.</h2>
+      <div class="llm-layout">
+        <div class="authority-stack">
+          <div class="authority-layer" style="--layer:var(--blue)"><strong>Source engines</strong><span>Tworzą fakty o buildach, pochodzeniu, zależnościach i advisory.</span></div>
+          <div class="authority-layer" style="--layer:var(--mint)"><strong>Deterministic tools</strong><span>Normalizują dane i generują jawne evidence records.</span></div>
+          <div class="authority-layer" style="--layer:var(--yellow)"><strong>Policy rulebook</strong><span>Wylicza risk, completeness, confidence i decision state.</span></div>
+          <div class="authority-layer" style="--layer:var(--violet)"><strong>LLM · optional</strong><span>Interpretuje intencję i wyjaśnia już policzone wyniki.</span></div>
+        </div>
+        <aside class="llm-thesis">
+          <span class="llm-thesis__overline">Zasada architektury</span>
+          <blockquote>Model może narrate.<br>Rules decide.</blockquote>
+          <p>Awaria modelu może pogorszyć jakość wyjaśnienia, ale nie zmienia faktów, wyniku ani werdyktu.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="slide" data-number="12 / 13" data-title="MVP i stack">
+      <div class="slide__topline">
+        <div class="brandline"><span class="brandmark">PR</span> Current runnable slice</div>
+        <span>Container-first MVP</span>
+      </div>
+      <h2>Działający pionowy przekrój już łączy workflow, API, UI i trwały ślad dochodzenia</h2>
+      <div class="stack-layout">
+        <div class="run-command">
+          <div class="run-command__label">Uruchomienie</div>
+          <code class="mono">docker compose up --build</code>
+          <p>UI i REST API startują na porcie 8080. Curated fixture uruchamia połączoną analizę ALBS + EDGP.</p>
+          <div class="status-line">SQLite przechowuje events, evidence i final result</div>
+        </div>
+        <div>
+          <div class="stack-list" aria-label="Tech stack MVP">
+            <div class="stack-item"><strong>LangGraph</strong><span>jawny workflow i routing</span></div>
+            <div class="stack-item"><strong>LangChain tools</strong><span>typed adapter boundaries</span></div>
+            <div class="stack-item"><strong>FastAPI + Uvicorn</strong><span>REST, UI, health/readiness</span></div>
+            <div class="stack-item"><strong>Pydantic</strong><span>kontrakty request/result/evidence</span></div>
+            <div class="stack-item"><strong>SQLite</strong><span>durable investigation event log</span></div>
+            <div class="stack-item"><strong>Typer + Rich</strong><span>lokalny deterministyczny CLI</span></div>
+            <div class="stack-item"><strong>Docker Compose</strong><span>powtarzalne środowisko demo</span></div>
+            <div class="stack-item"><strong>Pytest + Ruff</strong><span>kontrakty, workflow i jakość</span></div>
+          </div>
+          <div class="deferred"><strong>Redis, RabbitMQ i Celery są świadomie odłożone.</strong> Pojawią się dopiero przy realnej potrzebie live progress, cache, blokad, wielu workerów lub trwałych retry. Nie będą źródłem prawdy dla werdyktów.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide slide--dark" data-number="13 / 13" data-title="Roadmap">
+      <div class="slide__topline">
+        <div class="brandline"><span class="brandmark">PR</span> Next learning loop</div>
+        <span>Evidence model before infrastructure</span>
+      </div>
+      <h2>Najbliższy cel: udowodnić jakość decyzji na zestawie kontrolowanych przypadków</h2>
+      <div class="roadmap-layout">
+        <div class="roadmap-thesis">
+          <span class="tag accent-yellow"><span class="tag__dot"></span> MVP direction</span>
+          <span class="roadmap-thesis__big">Każdy nowy komponent musi redukować konkretną niepewność.</span>
+          <p>Rozszerzamy głębokość modelu dowodowego, zanim dodamy infrastrukturę rozproszoną.</p>
+        </div>
+        <div class="roadmap">
+          <div class="roadmap__item" style="--road:var(--blue)"><span class="roadmap__number">01</span><div><strong>Stable evidence IDs + source pointers</strong><span>Każdy wniosek ma precyzyjnie wskazać rekord źródłowy.</span></div></div>
+          <div class="roadmap__item" style="--road:var(--mint)"><span class="roadmap__number">02</span><div><strong>Policy / risk / completeness / confidence modules</strong><span>Osobne kontrakty i testowalne reguły.</span></div></div>
+          <div class="roadmap__item" style="--road:var(--yellow)"><span class="roadmap__number">03</span><div><strong>Contradiction detection</strong><span>Konflikty tożsamości, buildów, wydań i sygnatur między źródłami.</span></div></div>
+          <div class="roadmap__item" style="--road:var(--orange)"><span class="roadmap__number">04</span><div><strong>Golden evaluation harness</strong><span>Znane przypadki: braki, CVE, malformed data, timeout i prompt injection.</span></div></div>
+          <div class="roadmap__item" style="--road:var(--violet)"><span class="roadmap__number">05</span><div><strong>Human interrupt + MCP</strong><span>Kontrolowane wznowienie review i stabilny interfejs dla klientów agentowych.</span></div></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="deck-progress" aria-hidden="true"><div class="deck-progress__fill" id="progress"></div></div>
+  <nav class="deck-controls" aria-label="Sterowanie prezentacją">
+    <button type="button" id="prev" title="Poprzedni slajd" aria-label="Poprzedni slajd">←</button>
+    <span class="deck-counter" id="counter">1 / 13</span>
+    <button type="button" id="next" title="Następny slajd" aria-label="Następny slajd">→</button>
+    <button type="button" id="overviewButton" title="Widok wszystkich slajdów" aria-label="Widok wszystkich slajdów">▦</button>
+    <button type="button" id="fullscreen" title="Pełny ekran" aria-label="Pełny ekran">⛶</button>
+  </nav>
+  <div class="overview" id="overview" role="dialog" aria-label="Widok wszystkich slajdów"></div>
+
+  <script>
+    (() => {
+      const BASE_WIDTH = 1600;
+      const BASE_HEIGHT = 900;
+      const deck = document.getElementById("deck");
+      const slides = [...deck.querySelectorAll(".slide:not([aria-hidden='true'])")];
+      const progress = document.getElementById("progress");
+      const counter = document.getElementById("counter");
+      const prevButton = document.getElementById("prev");
+      const nextButton = document.getElementById("next");
+      const overviewButton = document.getElementById("overviewButton");
+      const fullscreenButton = document.getElementById("fullscreen");
+      const overview = document.getElementById("overview");
+      let current = Math.max(0, Math.min(slides.length - 1, Number(location.hash.slice(1)) - 1 || 0));
+      let touchStartX = 0;
+
+      function fitSlides() {
+        const scale = Math.min(window.innerWidth / BASE_WIDTH, window.innerHeight / BASE_HEIGHT);
+        slides.forEach((slide) => {
+          slide.style.transform = `translate(-50%, -50%) scale(${scale})`;
+        });
+        overview.querySelectorAll(".overview__item").forEach((item) => {
+          const clone = item.querySelector(".slide");
+          if (clone) {
+            const width = item.getBoundingClientRect().width;
+            clone.style.transform = `scale(${width / BASE_WIDTH})`;
+          }
+        });
+      }
+
+      function show(index, updateHash = true) {
+        current = Math.max(0, Math.min(slides.length - 1, index));
+        slides.forEach((slide, slideIndex) => {
+          const active = slideIndex === current;
+          slide.classList.toggle("is-active", active);
+          slide.setAttribute("aria-hidden", active ? "false" : "true");
+        });
+        counter.textContent = `${current + 1} / ${slides.length}`;
+        progress.style.width = `${((current + 1) / slides.length) * 100}%`;
+        prevButton.disabled = current === 0;
+        nextButton.disabled = current === slides.length - 1;
+        document.title = `${slides[current].dataset.title} - Provenance Risk Agent`;
+        if (updateHash) {
+          history.replaceState(null, "", `#${current + 1}`);
+        }
+        fitSlides();
+      }
+
+      function closeOverview() {
+        overview.classList.remove("is-open");
+        overview.setAttribute("aria-hidden", "true");
+        overviewButton.focus();
+      }
+
+      function buildOverview() {
+        if (overview.children.length) return;
+        slides.forEach((slide, index) => {
+          const button = document.createElement("button");
+          button.className = "overview__item";
+          button.type = "button";
+          button.setAttribute("aria-label", `Otwórz slajd ${index + 1}: ${slide.dataset.title}`);
+          const clone = slide.cloneNode(true);
+          clone.removeAttribute("aria-hidden");
+          clone.classList.add("is-active");
+          clone.style.display = "block";
+          const label = document.createElement("span");
+          label.className = "overview__label";
+          label.textContent = `${index + 1} · ${slide.dataset.title}`;
+          button.append(clone, label);
+          button.addEventListener("click", () => {
+            closeOverview();
+            show(index);
+          });
+          overview.append(button);
+        });
+      }
+
+      function toggleOverview() {
+        buildOverview();
+        const open = !overview.classList.contains("is-open");
+        overview.classList.toggle("is-open", open);
+        overview.setAttribute("aria-hidden", open ? "false" : "true");
+        if (open) {
+          fitSlides();
+          overview.children[current]?.focus();
+        }
+      }
+
+      function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen?.();
+        } else {
+          document.exitFullscreen?.();
+        }
+      }
+
+      prevButton.addEventListener("click", () => show(current - 1));
+      nextButton.addEventListener("click", () => show(current + 1));
+      overviewButton.addEventListener("click", toggleOverview);
+      fullscreenButton.addEventListener("click", toggleFullscreen);
+
+      document.addEventListener("keydown", (event) => {
+        if (overview.classList.contains("is-open")) {
+          if (event.key === "Escape" || event.key.toLowerCase() === "o") closeOverview();
+          return;
+        }
+        if (["ArrowRight", "PageDown", " "].includes(event.key)) {
+          event.preventDefault();
+          show(current + 1);
+        } else if (["ArrowLeft", "PageUp"].includes(event.key)) {
+          event.preventDefault();
+          show(current - 1);
+        } else if (event.key === "Home") {
+          show(0);
+        } else if (event.key === "End") {
+          show(slides.length - 1);
+        } else if (event.key.toLowerCase() === "o") {
+          toggleOverview();
+        } else if (event.key.toLowerCase() === "f") {
+          toggleFullscreen();
+        }
+      });
+
+      deck.addEventListener("touchstart", (event) => {
+        touchStartX = event.changedTouches[0].clientX;
+      }, { passive: true });
+
+      deck.addEventListener("touchend", (event) => {
+        const delta = event.changedTouches[0].clientX - touchStartX;
+        if (Math.abs(delta) > 60) show(current + (delta < 0 ? 1 : -1));
+      }, { passive: true });
+
+      window.addEventListener("resize", fitSlides);
+      window.addEventListener("hashchange", () => {
+        const requested = Number(location.hash.slice(1)) - 1;
+        if (Number.isFinite(requested)) show(requested, false);
+      });
+
+      show(current, false);
+    })();
+  </script>
+</body>
+</html>
