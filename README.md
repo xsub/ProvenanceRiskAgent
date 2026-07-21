@@ -52,7 +52,7 @@ logic. The goal is to give existing tools a faster, safer, inspectable
 interface for asking: why is this artifact risky, what evidence supports that
 answer, and is there enough evidence to trust the decision?
 
-## New MVP Goal
+## MVP Goal
 
 The MVP goal is a runnable demonstrator where a user can start the application
 with:
@@ -73,10 +73,10 @@ risky, and receive:
 - evidence integrated from both ALBS Provenance Explorer and EDGP;
 - no unsupported claims in the golden evaluation harness.
 
-The first approved planning document is
+The planning baseline is
 [`docs/planning/initial-demonstrator-plan.md`](docs/planning/initial-demonstrator-plan.md).
 
-## Why this project
+## What This Project Demonstrates
 
 It is deliberately not a generic chatbot.
 
@@ -227,7 +227,7 @@ and persist the workflow using SQLite or PostgreSQL checkpoints.
    cases for missing signatures, unknown builders, vulnerabilities, incomplete
    provenance, contradictions, timeouts, malformed data, and prompt injection.
 
-## Input contract
+## Input Contract
 
 The preferred inputs are real exports from the local EDGP and ALBS projects:
 
@@ -266,7 +266,10 @@ input:
 }
 ```
 
-## Run
+## Current Local CLI Harness
+
+Until the Docker Compose MVP is implemented, the current runnable slice is the
+local deterministic CLI workflow.
 
 ```bash
 python -m venv .venv
@@ -307,7 +310,7 @@ provenance-agent analyze examples/suspicious-build.json \
 The model name is intentionally supplied at runtime. The core workflow does not
 depend on one provider.
 
-## Questions this agent can answer later
+## Questions the MVP Is Designed to Answer
 
 - Why is this RPM considered risky?
 - Which evidence caused the score?
@@ -315,9 +318,9 @@ depend on one provider.
 - Is its signature missing or invalid?
 - Which unresolved CVEs affect the artifact?
 - What changed between two builds?
-- Should this artifact be admitted, quarantined, or escalated?
+- Should this artifact be allowed, denied, reviewed, or treated as unknown?
 
-## Production extension points
+## Planned Extension Points
 
 1. Replace the JSON repository with an ALBS/EDGP HTTP or SQLite adapter.
 2. Add graph queries: reverse dependencies, blast radius and provenance paths.
