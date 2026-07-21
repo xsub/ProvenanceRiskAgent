@@ -6,12 +6,12 @@ from langgraph.graph import END, START, StateGraph
 from .explainer import deterministic_explanation, llm_explanation
 from .models import AnalysisState
 from .repository import load_export
-from .tools import EVIDENCE_TOOLS
+from .tools import EVIDENCE_TOOLS, OBSERVATION_TOOLS
 
 
 def load_node(state: AnalysisState) -> dict:
     export = load_export(state["input_path"])
-    return {"export": export.model_dump(mode="json")}
+    return {"export": export}
 
 
 def collect_evidence_node(state: AnalysisState) -> dict:
@@ -22,6 +22,15 @@ def collect_evidence_node(state: AnalysisState) -> dict:
         result = evidence_tool.invoke({"export_json": export_json})
         evidence.extend(result)
     return {"evidence": evidence}
+
+
+def collect_observations_node(state: AnalysisState) -> dict:
+    export_json = __import__("json").dumps(state["export"])
+    observations: list[dict] = []
+    for observation_tool in OBSERVATION_TOOLS:
+        result = observation_tool.invoke({"export_json": export_json})
+        observations.extend(result)
+    return {"observations": observations}
 
 
 def score_node(state: AnalysisState) -> dict:
@@ -67,13 +76,25 @@ def render_node(state: AnalysisState) -> dict:
     lines = [
         f"# Provenance risk report: {artifact['name']}",
         "",
-        f"- Version: {artifact['version']}",
-        f"- Digest: `{artifact['digest']}`",
+        f"- Source schema: `{state['export']['source_schema']}`",
         f"- Risk: **{state['risk_level']}** ({state['risk_score']}/100)",
         f"- Human review: {'required' if state['requires_review'] else 'not required'}",
         "",
-        "## Evidence",
+        "## Verified Facts",
     ]
+    if artifact.get("version"):
+        lines.insert(3, f"- Version: {artifact['version']}")
+    if artifact.get("digest"):
+        lines.insert(4 if artifact.get("version") else 3, f"- Digest: `{artifact['digest']}`")
+    if state.get("observations"):
+        for item in state["observations"]:
+            lines.append(
+                f"- `{item['code']}`: {item['finding']} "
+                f"[source: {item['source']}]"
+            )
+    else:
+        lines.append("- No verified facts recorded.")
+    lines += ["", "## Risk Evidence"]
     if state["evidence"]:
         for item in state["evidence"]:
             lines.append(
@@ -93,6 +114,7 @@ def route_after_score(state: AnalysisState) -> str:
 def build_graph(model_name: str | None = None):
     builder = StateGraph(AnalysisState)
     builder.add_node("load", load_node)
+    builder.add_node("collect_observations", collect_observations_node)
     builder.add_node("collect_evidence", collect_evidence_node)
     builder.add_node("score", score_node)
     builder.add_node("review", review_node)
@@ -100,7 +122,8 @@ def build_graph(model_name: str | None = None):
     builder.add_node("render", render_node)
 
     builder.add_edge(START, "load")
-    builder.add_edge("load", "collect_evidence")
+    builder.add_edge("load", "collect_observations")
+    builder.add_edge("collect_observations", "collect_evidence")
     builder.add_edge("collect_evidence", "score")
     builder.add_conditional_edges(
         "score",

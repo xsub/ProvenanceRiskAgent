@@ -53,9 +53,16 @@ class Evidence(BaseModel):
     source: str
 
 
+class Observation(BaseModel):
+    code: str
+    finding: str
+    source: str
+
+
 class AnalysisState(TypedDict, total=False):
     input_path: str
     export: dict
+    observations: list[dict]
     evidence: list[dict]
     risk_score: int
     risk_level: str

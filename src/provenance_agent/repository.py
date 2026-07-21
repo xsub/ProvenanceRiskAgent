@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from .models import ProvenanceExport
+
+from .normalization import normalize_export
 
 
-def load_export(path: str | Path) -> ProvenanceExport:
+def load_export(path: str | Path) -> dict:
     source = Path(path)
     try:
         raw = json.loads(source.read_text(encoding="utf-8"))
@@ -14,4 +15,4 @@ def load_export(path: str | Path) -> ProvenanceExport:
     except json.JSONDecodeError as exc:
         raise ValueError(f"Invalid JSON in {source}: {exc}") from exc
 
-    return ProvenanceExport.model_validate(raw)
+    return normalize_export(raw, source)
