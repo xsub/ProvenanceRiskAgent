@@ -53,39 +53,39 @@ It demonstrates:
 
 ```mermaid
 flowchart LR
-  user["Browser / CLI / MCP client"]
-  api["FastAPI service"]
-  mcp["MCP server"]
-  graph["LangGraph investigation workflow"]
-  planner["Intent parsing and investigation plan"]
-  adapters["Controlled adapter tools"]
-  albs["ALBS Provenance Explorer<br/>build, lineage, CAS, signatures"]
-  edgp["EDGP<br/>dependencies, advisories, impact"]
-  evidence["Normalized evidence records"]
-  policy["Deterministic policy and risk"]
-  completeness["Completeness and confidence"]
-  explanation["Grounded explanation<br/>LLM optional"]
-  result["Decision, findings, evidence IDs, trace"]
-  ui["Minimal web UI"]
+  client["Browser / CLI / MCP client"];
+  api_service["FastAPI service"];
+  mcp_server["MCP server"];
+  workflow["LangGraph investigation workflow"];
+  planner["Intent parsing and investigation plan"];
+  adapter_tools["Controlled adapter tools"];
+  albs_engine["ALBS Provenance Explorer<br/>build, lineage, CAS, signatures"];
+  edgp_engine["EDGP<br/>dependencies, advisories, impact"];
+  evidence_records["Normalized evidence records"];
+  policy_engine["Deterministic policy and risk"];
+  assessment["Completeness and confidence"];
+  explainer["Grounded explanation<br/>LLM optional"];
+  response["Decision, findings, evidence IDs, trace"];
+  web_ui["Minimal web UI"];
 
-  user --> ui
-  user --> api
-  user --> mcp
-  ui --> api
-  api --> graph
-  mcp --> graph
-  graph --> planner
-  planner --> adapters
-  adapters --> albs
-  adapters --> edgp
-  albs --> evidence
-  edgp --> evidence
-  evidence --> policy
-  policy --> completeness
-  completeness --> explanation
-  explanation --> result
-  result --> api
-  result --> mcp
+  client --> web_ui;
+  client --> api_service;
+  client --> mcp_server;
+  web_ui --> api_service;
+  api_service --> workflow;
+  mcp_server --> workflow;
+  workflow --> planner;
+  planner --> adapter_tools;
+  adapter_tools --> albs_engine;
+  adapter_tools --> edgp_engine;
+  albs_engine --> evidence_records;
+  edgp_engine --> evidence_records;
+  evidence_records --> policy_engine;
+  policy_engine --> assessment;
+  assessment --> explainer;
+  explainer --> response;
+  response --> api_service;
+  response --> mcp_server;
 ```
 
 Deterministic code owns evidence retrieval, normalization, policy evaluation,
