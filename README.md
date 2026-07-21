@@ -13,6 +13,32 @@ evidence, calculates deterministic risk and policy outputs, and uses an LLM
 only for optional explanation. The LLM never invents or modifies package facts,
 evidence records, risk scores, completeness, confidence, or decisions.
 
+## Wizja, zakres i cel
+
+Wizja projektu jest prosta: Enterprise Linux supply-chain tools should expose
+an interface that matches how quickly modern investigations have to move.
+ALBS Provenance Explorer and EDGP already provide strong deterministic
+capabilities, but their command-line surfaces have many commands, parameters,
+source contracts, and cross-tool combinations. Without an orchestration layer,
+the human operator becomes the agent: choosing commands, remembering flags,
+translating artifact identities, joining outputs, checking policy implications,
+and tracking which evidence supports which conclusion.
+
+This project makes that agentic layer explicit and programmatic. The agentic
+behavior lives in bounded workflow orchestration, tool selection, state
+management, evidence normalization, missing-evidence detection, contradiction
+detection, policy evaluation, and grounded synthesis. An LLM can help interpret
+intent and explain results, but it is not the authority for evidence, risk,
+completeness, confidence, or admission decisions.
+
+The scope is intentionally narrow: the agent sits above ALBS Provenance
+Explorer and EDGP, uses them as source engines, and presents their combined
+evidence through UI, REST, CLI, and MCP. It is not a generic chatbot and it
+does not replace deterministic provenance, graph, vulnerability, or policy
+logic. The goal is to give existing tools a faster, safer, inspectable
+interface for asking: why is this artifact risky, what evidence supports that
+answer, and is there enough evidence to trust the decision?
+
 ## New MVP Goal
 
 The MVP goal is a runnable demonstrator where a user can start the application
@@ -48,23 +74,6 @@ It demonstrates:
 - LangGraph state, nodes, conditional routing and checkpoints;
 - separation of deterministic security logic from probabilistic narration;
 - a clean future integration boundary for ALBS Provenance Explorer or EDGP.
-
-## Why an Agent Interface
-
-ALBS Provenance Explorer and EDGP already expose powerful command-line
-interfaces, but the number of commands, flags, source contracts, and
-cross-tool combinations grows quickly. Past a certain point, a human operator
-starts acting like the agent: choosing tools, remembering parameters,
-translating artifact identities, joining outputs, checking policy implications,
-and keeping track of which evidence supports which conclusion.
-
-This project gives those deterministic tools an interface better suited to
-fast investigation loops. The programmatic agent translates a user question
-into a bounded plan, calls the right ALBS and EDGP capabilities with explicit
-parameters, preserves an inspectable trace, and returns a grounded answer
-through UI, REST, CLI, or MCP. The goal is not to hide or replace the source
-tools, but to make their combined evidence faster to use and harder to
-misread.
 
 ## Target Architecture
 
