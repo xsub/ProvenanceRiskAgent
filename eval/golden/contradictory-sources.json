@@ -36,7 +36,8 @@
             "version": "1.0",
             "release": "1.el9",
             "arch": "x86_64",
-            "cas_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "cas_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "errata_status": "confirmed_clean"
           }
         },
         {
@@ -55,6 +56,12 @@
           "metadata": {"verified": true}
         },
         {
+          "id": "sbom:demo",
+          "label": "demo SBOM",
+          "type": "sbom",
+          "metadata": {"format": "cyclonedx"}
+        },
+        {
           "id": "release:10",
           "label": "release 10",
           "type": "repository_release",
@@ -67,6 +74,7 @@
         {"source": "build:100", "target": "rpm:demo-conflict", "relation": "produces"},
         {"source": "rpm:demo-conflict", "target": "cas:artifact", "relation": "authenticated_by"},
         {"source": "rpm:demo-conflict", "target": "signature:demo", "relation": "signed_as"},
+        {"source": "rpm:demo-conflict", "target": "sbom:demo", "relation": "described_by"},
         {"source": "rpm:demo-conflict", "target": "release:10", "relation": "released_to"}
       ]
     },

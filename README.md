@@ -265,6 +265,15 @@ The preferred inputs are real exports from the local EDGP and ALBS projects:
 - `edgp.albs.artifact_inventory.v1`
 - `edgp.graph.snapshot.v1`
 
+Completeness is evaluated against the investigation question, not only against
+the fields available in a given source contract. In particular, an ALBS graph
+needs both SBOM coverage and a checked errata state (`advisory_present` or
+`confirmed_clean`) for complete security context. Standalone EDGP provenance,
+inventory, or dependency exports do not prove vulnerability coverage; they can
+have `risk=0` while correctly returning `REVIEW` with `security_context`
+missing. `ALLOW` requires zero risk, no contradictions, and no missing required
+evidence categories.
+
 The small format below is kept only as a learning fixture and compatibility
 input:
 

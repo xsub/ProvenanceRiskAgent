@@ -125,7 +125,10 @@ Risk, evidence completeness, and confidence are separate concepts.
   source quality, failures, contradictions, and missing data.
 
 A low risk score with incomplete evidence must not be presented as proof of
-safety.
+safety. `ALLOW` therefore requires no missing required evidence. ALBS security
+context is complete only when SBOM and checked errata coverage are present;
+standalone provenance or inventory evidence may remain `REVIEW` even at zero
+risk.
 
 Decision states:
 

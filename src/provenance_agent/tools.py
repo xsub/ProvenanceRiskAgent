@@ -452,6 +452,16 @@ def _summarize_albs_graph(source: dict[str, Any]) -> list[dict]:
     ]
     artifact_cas = [node for node in rpm_nodes if _has_artifact_cas(graph, node["id"])]
     source_cas = [node for node in rpm_nodes if _has_source_cas(graph, node["id"])]
+    sbom = [
+        node for node in rpm_nodes if graph["outgoing"][node["id"]].get("described_by")
+    ]
+    errata = [
+        node
+        for node in rpm_nodes
+        if graph["outgoing"][node["id"]].get("affected_by")
+        or graph["outgoing"][node["id"]].get("fixes")
+        or (node.get("metadata") or {}).get("errata_status") == "confirmed_clean"
+    ]
     build_tasks = _nodes_by_type(graph, "build_task")
     source_packages = _nodes_by_type(graph, "source_package")
 
@@ -463,7 +473,9 @@ def _summarize_albs_graph(source: dict[str, Any]) -> list[dict]:
             f"{len(released)}/{len(rpm_nodes)} binary RPM(s) have release edges, "
             f"{len(signed)}/{len(rpm_nodes)} have signature edges, "
             f"{len(artifact_cas)}/{len(rpm_nodes)} have artifact CAS evidence, "
-            f"{len(source_cas)}/{len(rpm_nodes)} have source CAS evidence."
+            f"{len(source_cas)}/{len(rpm_nodes)} have source CAS evidence, "
+            f"{len(sbom)}/{len(rpm_nodes)} have SBOM coverage, and "
+            f"{len(errata)}/{len(rpm_nodes)} have checked errata status."
         ),
         "nodes + edges",
     )]

@@ -5,6 +5,7 @@ from provenance_agent.confidence import assess_confidence
 from provenance_agent.contracts import Contradiction, SourcePointer
 from provenance_agent.contradictions import detect_contradictions
 from provenance_agent.decision import decide
+from provenance_agent.policy import evaluate_policy
 from provenance_agent.repository import load_export
 from provenance_agent.risk import assess_risk
 
@@ -84,3 +85,37 @@ def test_single_mismatched_source_artifact_is_not_silently_skipped():
     codes = {item.code for item in detect_contradictions(changed)}
 
     assert "CROSS_SOURCE_ARTIFACT_NAME_MISMATCH" in codes
+
+
+def test_zero_risk_with_missing_security_context_cannot_be_allowed():
+    export = load_export("eval/golden/contradictory-sources.json")
+    changed = deepcopy(export)
+    albs_source = changed["source"]["sources"][0]
+    binary = next(node for node in albs_source["nodes"] if node["type"] == "binary_rpm")
+    binary["metadata"].pop("errata_status")
+    inventory = changed["source"]["sources"][1]
+    inventory["items"][0]["casHash"] = changed["artifact"]["digest"].split(":", 1)[1]
+    contradictions = detect_contradictions(changed)
+    risk = assess_risk([])
+    completeness = assess_completeness(changed, contradictions)
+    confidence = assess_confidence(
+        completeness,
+        contradictions,
+        compatibility_fixture=False,
+    )
+    policy = evaluate_policy(
+        risk=risk,
+        completeness=completeness,
+        contradictions=contradictions,
+    )
+
+    assert contradictions == []
+    assert "security_context" in completeness.missing_categories
+    assert "errata_coverage" in completeness.missing_categories
+    assert "required-evidence" in policy.failed_rule_ids
+    assert decide(
+        risk=risk,
+        completeness=completeness,
+        confidence=confidence,
+        contradictions=contradictions,
+    ) == "REVIEW"

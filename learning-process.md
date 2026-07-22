@@ -179,6 +179,14 @@ coverage is no longer equivalent to safety. The decision module can return
 was emitted. The policy module remains an explicit rulebook and records each
 rule result separately from the final decision.
 
+The ALBS validation made this distinction concrete. Provenance lineage can be
+complete while security context remains incomplete. The latter requires SBOM
+coverage plus a checked errata state, either an advisory relation or an
+explicit `confirmed_clean` result. The decision module therefore permits
+`ALLOW` only when no required category is missing. Standalone EDGP provenance
+or inventory can report zero findings while still routing to `REVIEW` because
+it does not establish vulnerability coverage.
+
 ## 10. Cross-Source Contradictions
 
 Combined ALBS and EDGP exports may disagree about artifact name, version,

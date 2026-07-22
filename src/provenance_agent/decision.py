@@ -20,6 +20,11 @@ def decide(
         return "UNKNOWN"
     if contradictions:
         return "REVIEW"
-    if risk.score == 0 and completeness.score >= 80 and confidence.score >= 70:
+    if (
+        risk.score == 0
+        and not completeness.missing_categories
+        and completeness.score == 100
+        and confidence.score >= 70
+    ):
         return "ALLOW"
     return "REVIEW"

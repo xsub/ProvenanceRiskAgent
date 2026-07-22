@@ -17,7 +17,7 @@ def assess_completeness(
     export: dict[str, Any],
     contradictions: list[Contradiction],
 ) -> CompletenessAssessment:
-    required = {"artifact_identity", "source_coverage"}
+    required = {"artifact_identity", "security_context", "source_coverage"}
     present: set[str] = set()
     artifact = export.get("artifact") or {}
     if artifact.get("name"):
@@ -63,10 +63,19 @@ def _collect_source_coverage(
             present.add("policy")
         if isinstance(source.get("vulnerabilities"), list):
             present.add("vulnerability_coverage")
+            present.add("security_context")
         return
     if schema == ALBS_GRAPH_SCHEMA:
         required.update(
-            {"build_provenance", "artifact_integrity", "source_integrity", "signature", "release"}
+            {
+                "artifact_integrity",
+                "build_provenance",
+                "errata_coverage",
+                "release",
+                "sbom",
+                "signature",
+                "source_integrity",
+            }
         )
         nodes = source.get("nodes") or []
         edges = source.get("edges") or []
@@ -93,6 +102,18 @@ def _collect_source_coverage(
             present.add("artifact_integrity")
         if _has_source_cas(nodes, edges, node_by_id, binary_ids):
             present.add("source_integrity")
+        if _has_relation_to_type(
+            edges,
+            node_by_id,
+            binary_ids,
+            relation="described_by",
+            target_type="sbom",
+        ):
+            present.add("sbom")
+        if _has_errata_coverage(edges, node_by_id, binary_ids):
+            present.add("errata_coverage")
+        if {"sbom", "errata_coverage"} <= present:
+            present.add("security_context")
         return
     if schema == EDGP_RPM_ALBS_PROVENANCE_SCHEMA:
         required.update({"dependency_mapping", "artifact_integrity", "build_identity", "release"})
@@ -181,3 +202,41 @@ def _has_source_cas(
         and node_id in authenticated_targets
         for node_id in source_cas_ids
     ) and bool(nodes)
+
+
+def _has_relation_to_type(
+    edges: list[dict[str, Any]],
+    node_by_id: dict[str, dict[str, Any]],
+    source_ids: set[str],
+    *,
+    relation: str,
+    target_type: str,
+) -> bool:
+    covered = {
+        str(edge.get("source"))
+        for edge in edges
+        if edge.get("relation") == relation
+        and str(edge.get("source")) in source_ids
+        and node_by_id.get(str(edge.get("target")), {}).get("type") == target_type
+    }
+    return bool(source_ids) and covered == source_ids
+
+
+def _has_errata_coverage(
+    edges: list[dict[str, Any]],
+    node_by_id: dict[str, dict[str, Any]],
+    binary_ids: set[str],
+) -> bool:
+    covered = {
+        str(edge.get("source"))
+        for edge in edges
+        if edge.get("relation") in {"affected_by", "fixes"}
+        and str(edge.get("source")) in binary_ids
+    }
+    covered.update(
+        node_id
+        for node_id in binary_ids
+        if (node_by_id.get(node_id, {}).get("metadata") or {}).get("errata_status")
+        == "confirmed_clean"
+    )
+    return bool(binary_ids) and covered == binary_ids

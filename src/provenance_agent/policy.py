@@ -16,14 +16,15 @@ def evaluate_policy(
     contradictions: list[Contradiction],
     profile: str = "default",
 ) -> PolicyEvaluation:
+    evidence_complete = not completeness.missing_categories
     rules = [
         PolicyRuleResult(
             rule_id="required-evidence",
-            status="pass" if completeness.score >= 80 else "fail",
+            status="pass" if evidence_complete else "fail",
             message=(
                 "Required evidence coverage is sufficient."
-                if completeness.score >= 80
-                else "Required evidence coverage is below 80%."
+                if evidence_complete
+                else "One or more required evidence categories are missing."
             ),
         ),
         PolicyRuleResult(
