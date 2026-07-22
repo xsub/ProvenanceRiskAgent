@@ -1,3 +1,9 @@
+"""LangGraph workflow tests across curated and upstream-compatible inputs.
+
+Verifies risk routing and evidence extraction for compact fixtures, combined
+ALBS/EDGP data, and representative real source-engine export contracts.
+"""
+
 from pathlib import Path
 
 import pytest

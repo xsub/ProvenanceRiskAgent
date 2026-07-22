@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted.
+Accepted. The JSON replay boundary remains valid; live acquisition is an
+additive extension defined by ADR 0006.
 
 ## Context
 

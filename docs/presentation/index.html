@@ -1688,9 +1688,9 @@
       <div class="problem-grid">
         <div class="terminal mono" aria-label="Przykładowe złożone komendy CLI">
           <div class="terminal__bar"><span></span><span></span><span></span></div>
-          <p><span class="prompt">$</span> albs-graph trust <span class="flag">--build-id</span> <span class="value">17812</span><br><span class="flag">--package</span> nginx-core <span class="flag">--arch</span> x86_64</p>
-          <p><span class="prompt">$</span> edgp rpm-albs-provenance<br><span class="flag">--build-id</span> <span class="value">17812</span> <span class="flag">--rpm-limit</span> <span class="value">200</span></p>
-          <p><span class="prompt">$</span> edgp public-advisory-feed<br><span class="flag">--path</span> osv.json <span class="flag">--ecosystem</span> rpm</p>
+          <p><span class="prompt">$</span> albs-graph trust-path nginx-core<br><span class="flag">--build-id</span> <span class="value">57810</span> <span class="flag">--arch</span> x86_64</p>
+          <p><span class="prompt">$</span> edgp albs-artifact-inventory<br><span class="flag">--build-id</span> <span class="value">57810</span> <span class="flag">--task-limit</span> <span class="value">5000</span></p>
+          <p><span class="prompt">$</span> edgp public-advisory-feed<br><span class="flag">--path</span> osv.json <span class="flag">--ecosystem</span> AlmaLinux:10</p>
           <p class="faded"># połącz tożsamości, oceń braki, zastosuj reguły, zachowaj ślad...</p>
         </div>
         <div class="operator-shift">
@@ -1714,7 +1714,7 @@
       <div class="officer-flow">
         <div class="officer-flow__step" style="--step-color:var(--blue)">
           <strong>Investigate</strong>
-          <span>Rozwiązuje tożsamość artefaktu i planuje zakres.</span>
+          <span>Wiąże tożsamość artefaktu ze stałym, ograniczonym planem dowodowym.</span>
         </div>
         <div class="officer-flow__step" style="--step-color:var(--mint)">
           <strong>Verify</strong>
@@ -1740,10 +1740,10 @@
         <div class="brandline"><span class="brandmark">PR</span> Zależności projektu</div>
         <span>Two engines, one investigation</span>
       </div>
-      <h2>Dwa silniki dostarczają dowodów. Agent nadaje im wspólny język decyzji.</h2>
+      <h2>Dwa silniki tworzą oceny domenowe. Agent uzgadnia je we wspólnym języku decyzji.</h2>
       <div class="landscape">
         <article class="engine" style="--engine-color:var(--blue)">
-          <span class="engine__label">Źródło prawdy #1</span>
+          <span class="engine__label">Autorytet oceny #1</span>
           <h3>ALBS Provenance Explorer</h3>
           <p>Skąd artefakt pochodzi i czy jego ścieżka zaufania jest kompletna?</p>
           <ul>
@@ -1767,7 +1767,7 @@
         </article>
         <div class="landscape__arrow" aria-hidden="true">←</div>
         <article class="engine" style="--engine-color:var(--mint)">
-          <span class="engine__label">Źródło prawdy #2</span>
+          <span class="engine__label">Autorytet oceny #2</span>
           <h3>EDGP</h3>
           <p>Jak artefakt łączy się z resztą ekosystemu i jaki jest jego wpływ?</p>
           <ul>
@@ -1778,7 +1778,7 @@
           </ul>
         </article>
       </div>
-      <div class="source-note">Kontrakty wejściowe MVP: <span class="mono">albs-provenance-explorer/v1</span>, <span class="mono">edgp.rpm.albs_provenance.v1</span>, <span class="mono">edgp.albs.artifact_inventory.v1</span>, <span class="mono">edgp.graph.snapshot.v1</span>.</div>
+      <div class="source-note">Kontrakty live i replay: <span class="mono">albs-provenance-explorer/v1</span>, <span class="mono">edgp.rpm.albs_provenance.v1</span>, <span class="mono">edgp.albs.artifact_inventory.v1</span>, <span class="mono">edgp.graph.snapshot.v1</span>, <span class="mono">edgp.public.advisory_feed.v1</span>.</div>
     </section>
 
     <section class="slide" data-number="05 / 13" data-title="ALBS">
@@ -1789,9 +1789,9 @@
       <h2>ALBS odpowiada na pytanie: „czy potrafimy udowodnić drogę od źródła do wydanego RPM?”</h2>
       <div class="chain-layout">
         <div class="chain-intro">
-          <span class="tag accent-blue"><span class="tag__dot"></span> Read-only evidence engine</span>
+          <span class="tag accent-blue"><span class="tag__dot"></span> Read-only assessment engine</span>
           <div class="chain-intro__statement">Buduje graf pochodzenia nad ALBS, RPM, SBOM, CAS, podpisami i erratami.</div>
-          <p>Agent nie kopiuje tej logiki. Konsumuje wersjonowany eksport i interpretuje jego relacje jako dowody dla reguł polityki.</p>
+          <p>Agent nie kopiuje tej logiki. Wywołuje przypięty silnik lub odtwarza wersjonowany eksport, a następnie waliduje i interpretuje ocenę.</p>
         </div>
         <div class="trust-chain" aria-label="Ścieżka zaufania ALBS">
           <div class="trust-chain__item"><span>01</span><strong>Source package</strong></div>
@@ -1857,7 +1857,7 @@
           <tr>
             <td><strong>Buduje dowód pochodzenia</strong>Źródło, commit, build task, RPM, podpis, CAS i release.</td>
             <td><strong>Buduje dowód relacji</strong>Zależności, ścieżki, repozytoria, advisories i impact.</td>
-            <td><strong>Prowadzi dochodzenie</strong>Rozumie pytanie, wybiera narzędzia i utrzymuje stan.</td>
+            <td><strong>Prowadzi dochodzenie</strong>Wykonuje ograniczony workflow, wywołuje narzędzia i utrzymuje stan.</td>
           </tr>
           <tr>
             <td><strong>Wykrywa braki trust path</strong>Niekompletna sygnatura, CAS, build lub release.</td>
@@ -1881,12 +1881,12 @@
       </div>
       <h2>Dochodzenie jest automatem stanów, nie ukrytą rozmową z modelem</h2>
       <div class="workflow" aria-label="Kroki workflow agenta">
-        <div class="workflow__step" style="--step:var(--blue)"><span class="workflow__dot"></span><strong>Load</strong><span>Wczytaj i zwaliduj eksport.</span></div>
+        <div class="workflow__step" style="--step:var(--blue)"><span class="workflow__dot"></span><strong>Acquire</strong><span>Uruchom live adaptery lub wczytaj zapisane dowody.</span></div>
         <div class="workflow__step" style="--step:var(--cyan)"><span class="workflow__dot"></span><strong>Normalize</strong><span>Ujednolić tożsamość i kontrakty.</span></div>
         <div class="workflow__step" style="--step:var(--mint)"><span class="workflow__dot"></span><strong>Collect facts</strong><span>Zapisz pokrycie i fakty zweryfikowane.</span></div>
         <div class="workflow__step" style="--step:var(--yellow)"><span class="workflow__dot"></span><strong>Collect risk evidence</strong><span>Uruchom jawne checki źródłowe.</span></div>
-        <div class="workflow__step" style="--step:var(--orange)"><span class="workflow__dot"></span><strong>Apply policy</strong><span>Policz risk i reliability.</span></div>
-        <div class="workflow__step" style="--step:var(--violet)"><span class="workflow__dot"></span><strong>Route</strong><span>ALLOW, REVIEW, UNKNOWN lub ERROR.</span></div>
+        <div class="workflow__step" style="--step:var(--orange)"><span class="workflow__dot"></span><strong>Assess</strong><span>Risk, completeness, confidence, contradictions i policy.</span></div>
+        <div class="workflow__step" style="--step:var(--violet)"><span class="workflow__dot"></span><strong>Route</strong><span>Zaproponuj ALLOW, REVIEW lub UNKNOWN; awarie dają ERROR.</span></div>
         <div class="workflow__step" style="--step:var(--coral)"><span class="workflow__dot"></span><strong>Report</strong><span>Werdykt, evidence IDs i trace.</span></div>
       </div>
       <div class="workflow-branch">
@@ -1969,10 +1969,10 @@
       <h2>Opcjonalny LLM nie umniejsza agentowości. Oddziela komunikację od autorytetu.</h2>
       <div class="llm-layout">
         <div class="authority-stack">
-          <div class="authority-layer" style="--layer:var(--blue)"><strong>Source engines</strong><span>Tworzą fakty o buildach, pochodzeniu, zależnościach i advisory.</span></div>
+          <div class="authority-layer" style="--layer:var(--blue)"><strong>Assessment engines</strong><span>Pobierają artefakty i tworzą oceny pochodzenia, zależności i advisory.</span></div>
           <div class="authority-layer" style="--layer:var(--mint)"><strong>Deterministic tools</strong><span>Normalizują dane i generują jawne evidence records.</span></div>
           <div class="authority-layer" style="--layer:var(--yellow)"><strong>Policy rulebook</strong><span>Wylicza risk, completeness, confidence i decision state.</span></div>
-          <div class="authority-layer" style="--layer:var(--violet)"><strong>LLM · optional</strong><span>Interpretuje intencję i wyjaśnia już policzone wyniki.</span></div>
+          <div class="authority-layer" style="--layer:var(--violet)"><strong>LLM · optional</strong><span>Wyjaśnia policzone wyniki na podstawie cytowanych dowodów.</span></div>
         </div>
         <aside class="llm-thesis">
           <span class="llm-thesis__overline">Zasada architektury</span>
@@ -1992,8 +1992,8 @@
         <div class="run-command">
           <div class="run-command__label">Uruchomienie</div>
           <code class="mono">docker compose up --build</code>
-          <p>UI i REST API startują na porcie 8080. Curated fixture uruchamia połączoną analizę ALBS + EDGP.</p>
-          <div class="status-line">SQLite przechowuje events, evidence i final result</div>
+          <p>UI i REST API startują na porcie 8080. Replay działa offline; tryb live wywołuje przypięte ALBS/EDGP oraz AlmaLinux errata i OSV.</p>
+          <div class="status-line">50 testów · 10/10 golden cases · wersjonowane profile polityk</div>
         </div>
         <div>
           <div class="stack-list" aria-label="Tech stack MVP">
@@ -2013,22 +2013,22 @@
 
     <section class="slide slide--dark" data-number="13 / 13" data-title="MVP ukończone">
       <div class="slide__topline">
-        <div class="brandline"><span class="brandmark">PR</span> Next learning loop</div>
-        <span>Evidence model before infrastructure</span>
+        <div class="brandline"><span class="brandmark">PR</span> Następny milestone</div>
+        <span>Production evaluation pack</span>
       </div>
-      <h2>Najbliższy cel: udowodnić jakość decyzji na zestawie kontrolowanych przypadków</h2>
+      <h2>Najbliższy cel: zmierzyć jakość decyzji na zarządzanych, rzeczywistych przypadkach ALBS/EDGP</h2>
       <div class="roadmap-layout">
         <div class="roadmap-thesis">
           <span class="tag accent-yellow"><span class="tag__dot"></span> MVP ukończone</span>
-          <span class="roadmap-thesis__big">Roadmapa jest teraz działającym i zwalidowanym systemem.</span>
-          <p>Rozszerzamy głębokość modelu dowodowego, zanim dodamy infrastrukturę rozproszoną.</p>
+          <span class="roadmap-thesis__big">Od deterministycznej poprawności do mierzalnej jakości decyzji.</span>
+          <p>Kalibrujemy politykę na recenzowanych dowodach przed rozbudową infrastruktury.</p>
         </div>
         <div class="roadmap">
-          <div class="roadmap__item" style="--road:var(--blue)"><span class="roadmap__number">01</span><div><strong>Stable evidence IDs + source pointers</strong><span>Każdy wniosek ma precyzyjnie wskazać rekord źródłowy.</span></div></div>
-          <div class="roadmap__item" style="--road:var(--mint)"><span class="roadmap__number">02</span><div><strong>Policy / risk / completeness / confidence modules</strong><span>Osobne kontrakty i testowalne reguły.</span></div></div>
-          <div class="roadmap__item" style="--road:var(--yellow)"><span class="roadmap__number">03</span><div><strong>Contradiction detection</strong><span>Konflikty tożsamości, buildów, wydań i sygnatur między źródłami.</span></div></div>
-          <div class="roadmap__item" style="--road:var(--orange)"><span class="roadmap__number">04</span><div><strong>Golden evaluation harness</strong><span>Znane przypadki: braki, CVE, malformed data, timeout i prompt injection.</span></div></div>
-          <div class="roadmap__item" style="--road:var(--violet)"><span class="roadmap__number">05</span><div><strong>Human interrupt + MCP</strong><span>Kontrolowane wznowienie review i stabilny interfejs dla klientów agentowych.</span></div></div>
+          <div class="roadmap__item" style="--road:var(--blue)"><span class="roadmap__number">01</span><div><strong>Wersjonowane snapshoty ewaluacyjne</strong><span>Zebrać 20–50 powtarzalnych, rzeczywistych ocen ALBS/EDGP.</span></div></div>
+          <div class="roadmap__item" style="--road:var(--mint)"><span class="roadmap__number">02</span><div><strong>Recenzowane oczekiwane wyniki</strong><span>Zapisać oczekiwane fakty, decyzje i brakujące kategorie dowodów.</span></div></div>
+          <div class="roadmap__item" style="--road:var(--yellow)"><span class="roadmap__number">03</span><div><strong>Etykiety i koszty błędów</strong><span>Śledzić true positive, false positive, false negative i koszt operacyjny.</span></div></div>
+          <div class="roadmap__item" style="--road:var(--orange)"><span class="roadmap__number">04</span><div><strong>Raporty regresji profili</strong><span>Porównywać wersje polityk i wykrywać regresje jakości decyzji.</span></div></div>
+          <div class="roadmap__item" style="--road:var(--violet)"><span class="roadmap__number">05</span><div><strong>Zaufanie produkcyjne i operacje</strong><span>Podpisane feedy, telemetria, a baza lub workery dopiero po pomiarach.</span></div></div>
         </div>
       </div>
     </section>

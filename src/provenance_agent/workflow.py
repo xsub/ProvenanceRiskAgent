@@ -1,3 +1,9 @@
+"""LangGraph definition of the bounded investigation workflow.
+
+Implements graph nodes for loading, evidence collection, contradiction, risk,
+coverage, confidence, policy, decision, review, explanation, and rendering.
+"""
+
 from __future__ import annotations
 
 import json

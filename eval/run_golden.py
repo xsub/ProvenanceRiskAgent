@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""Command-line entry point for the deterministic golden evaluation suite.
+
+Parses the manifest option, runs all evaluation cases, renders JSON results,
+and maps aggregate success to a process exit status.
+"""
+
 from __future__ import annotations
 
 import argparse

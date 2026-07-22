@@ -1,3 +1,9 @@
+"""Focused tests for deterministic assessment and decision modules.
+
+Verifies stable evidence identity, contradiction reduction, confidence impact,
+cross-source mismatch handling, and fail-closed incomplete decisions.
+"""
+
 from copy import deepcopy
 
 from provenance_agent.completeness import assess_completeness

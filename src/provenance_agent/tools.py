@@ -1,3 +1,9 @@
+"""LangChain tools for validating and reconciling upstream assessments.
+
+Defines deterministic evaluation, validation, interpretation, derivation, and
+coverage tools plus schema-specific helpers for ALBS and EDGP records.
+"""
+
 from __future__ import annotations
 
 from collections import deque
@@ -20,8 +26,8 @@ from .normalization import (
 
 
 @tool
-def inspect_builder(export_json: str) -> list[dict]:
-    """Check whether a simple artifact export used an allowed builder."""
+def evaluate_builder_policy(export_json: str) -> list[dict]:
+    """Evaluate builder policy for the compatibility fixture contract."""
     export = _loads(export_json)
     if export["source_schema"] != SIMPLE_SCHEMA:
         return []
@@ -39,8 +45,8 @@ def inspect_builder(export_json: str) -> list[dict]:
 
 
 @tool
-def inspect_signature(export_json: str) -> list[dict]:
-    """Check required artifact signature evidence."""
+def validate_signature_evidence(export_json: str) -> list[dict]:
+    """Validate signature evidence reported by the source assessment."""
     export = _loads(export_json)
     if export["source_schema"] == SIMPLE_SCHEMA:
         source = ProvenanceExport.model_validate(export["source"])
@@ -54,14 +60,14 @@ def inspect_signature(export_json: str) -> list[dict]:
         return []
 
     if export["source_schema"] == ALBS_GRAPH_SCHEMA:
-        return _inspect_albs_signatures(export["source"])
+        return _interpret_albs_signature_assessment(export["source"])
 
     return []
 
 
 @tool
-def inspect_reproducibility(export_json: str) -> list[dict]:
-    """Check reproducible-build policy evidence for the simple export format."""
+def evaluate_reproducibility_policy(export_json: str) -> list[dict]:
+    """Evaluate reproducibility policy for the compatibility fixture contract."""
     export = _loads(export_json)
     if export["source_schema"] != SIMPLE_SCHEMA:
         return []
@@ -78,8 +84,8 @@ def inspect_reproducibility(export_json: str) -> list[dict]:
 
 
 @tool
-def inspect_vulnerabilities(export_json: str) -> list[dict]:
-    """Collect unresolved vulnerabilities or explicit affected-by graph edges."""
+def interpret_vulnerability_assessment(export_json: str) -> list[dict]:
+    """Interpret vulnerability findings reported by supported assessments."""
     export = _loads(export_json)
     if export["source_schema"] == SIMPLE_SCHEMA:
         source = ProvenanceExport.model_validate(export["source"])
@@ -97,17 +103,17 @@ def inspect_vulnerabilities(export_json: str) -> list[dict]:
         return findings
 
     if export["source_schema"] == ALBS_GRAPH_SCHEMA:
-        return _inspect_albs_vulnerabilities(export["source"])
+        return _interpret_albs_vulnerability_assessment(export["source"])
 
     if export["source_schema"] == EDGP_PUBLIC_ADVISORY_FEED_SCHEMA:
-        return _inspect_edgp_advisories(export["source"])
+        return _interpret_edgp_advisory_assessment(export["source"])
 
     return []
 
 
 @tool
-def inspect_albs_trust_path(export_json: str) -> list[dict]:
-    """Check ALBS provenance graph trust-path completeness."""
+def validate_albs_provenance_assessment(export_json: str) -> list[dict]:
+    """Validate completeness claims in an ALBS provenance assessment."""
     export = _loads(export_json)
     if export["source_schema"] != ALBS_GRAPH_SCHEMA:
         return []
@@ -172,8 +178,8 @@ def inspect_albs_trust_path(export_json: str) -> list[dict]:
 
 
 @tool
-def inspect_edgp_rpm_albs_provenance(export_json: str) -> list[dict]:
-    """Check EDGP installed-RPM to ALBS artifact provenance coverage."""
+def validate_edgp_provenance_assessment(export_json: str) -> list[dict]:
+    """Validate coverage claims in an EDGP RPM-to-ALBS assessment."""
     export = _loads(export_json)
     if export["source_schema"] != EDGP_RPM_ALBS_PROVENANCE_SCHEMA:
         return []
@@ -229,8 +235,8 @@ def inspect_edgp_rpm_albs_provenance(export_json: str) -> list[dict]:
 
 
 @tool
-def inspect_edgp_albs_inventory(export_json: str) -> list[dict]:
-    """Check EDGP ALBS artifact inventory coverage fields."""
+def validate_edgp_inventory_assessment(export_json: str) -> list[dict]:
+    """Validate coverage claims in an EDGP ALBS inventory assessment."""
     export = _loads(export_json)
     if export["source_schema"] != EDGP_ALBS_ARTIFACT_INVENTORY_SCHEMA:
         return []
@@ -270,8 +276,8 @@ def inspect_edgp_albs_inventory(export_json: str) -> list[dict]:
 
 
 @tool
-def inspect_edgp_graph_snapshot(export_json: str) -> list[dict]:
-    """Check EDGP graph snapshot structural integrity."""
+def validate_edgp_graph_assessment(export_json: str) -> list[dict]:
+    """Validate structural claims in an EDGP graph assessment."""
     export = _loads(export_json)
     if export["source_schema"] != EDGP_GRAPH_SNAPSHOT_SCHEMA:
         return []
@@ -317,8 +323,8 @@ def inspect_edgp_graph_snapshot(export_json: str) -> list[dict]:
 
 
 @tool
-def calculate_edgp_blast_radius(export_json: str) -> list[dict]:
-    """Calculate bounded reverse-dependency impact for an EDGP graph root."""
+def derive_edgp_blast_radius_finding(export_json: str) -> list[dict]:
+    """Derive a bounded blast-radius finding from an EDGP graph assessment."""
     export = _loads(export_json)
     if export["source_schema"] != EDGP_GRAPH_SNAPSHOT_SCHEMA:
         return []
@@ -345,8 +351,8 @@ def calculate_edgp_blast_radius(export_json: str) -> list[dict]:
 
 
 @tool
-def summarize_source_coverage(export_json: str) -> list[dict]:
-    """Summarize deterministic source coverage facts without changing risk."""
+def summarize_assessment_coverage(export_json: str) -> list[dict]:
+    """Summarize assessment coverage facts without changing risk."""
     export = _loads(export_json)
     source_schema = export["source_schema"]
     source = export["source"]
@@ -381,20 +387,20 @@ def summarize_source_coverage(export_json: str) -> list[dict]:
 
 
 EVIDENCE_TOOLS = [
-    inspect_builder,
-    inspect_signature,
-    inspect_reproducibility,
-    inspect_vulnerabilities,
-    inspect_albs_trust_path,
-    inspect_edgp_rpm_albs_provenance,
-    inspect_edgp_albs_inventory,
-    inspect_edgp_graph_snapshot,
-    calculate_edgp_blast_radius,
+    evaluate_builder_policy,
+    validate_signature_evidence,
+    evaluate_reproducibility_policy,
+    interpret_vulnerability_assessment,
+    validate_albs_provenance_assessment,
+    validate_edgp_provenance_assessment,
+    validate_edgp_inventory_assessment,
+    validate_edgp_graph_assessment,
+    derive_edgp_blast_radius_finding,
 ]
 
 
 OBSERVATION_TOOLS = [
-    summarize_source_coverage,
+    summarize_assessment_coverage,
 ]
 
 
@@ -584,7 +590,7 @@ def _summarize_edgp_advisories(source: dict[str, Any]) -> list[dict]:
     )]
 
 
-def _inspect_albs_signatures(source: dict[str, Any]) -> list[dict]:
+def _interpret_albs_signature_assessment(source: dict[str, Any]) -> list[dict]:
     graph = _albs_graph(source)
     released_rpms = [
         node
@@ -607,7 +613,7 @@ def _inspect_albs_signatures(source: dict[str, Any]) -> list[dict]:
     )]
 
 
-def _inspect_albs_vulnerabilities(source: dict[str, Any]) -> list[dict]:
+def _interpret_albs_vulnerability_assessment(source: dict[str, Any]) -> list[dict]:
     graph = _albs_graph(source)
     affected_edges = [
         edge
@@ -625,7 +631,7 @@ def _inspect_albs_vulnerabilities(source: dict[str, Any]) -> list[dict]:
     )]
 
 
-def _inspect_edgp_advisories(source: dict[str, Any]) -> list[dict]:
+def _interpret_edgp_advisory_assessment(source: dict[str, Any]) -> list[dict]:
     query = source.get("query") or {}
     if query.get("status") != "complete":
         return []

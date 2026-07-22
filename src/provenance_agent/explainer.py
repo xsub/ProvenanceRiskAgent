@@ -1,3 +1,9 @@
+"""Grounded explanation generation for completed investigations.
+
+Provides deterministic narration and an optional LLM path constrained to the
+supplied evidence, scores, contradictions, policy results, and decision.
+"""
+
 from __future__ import annotations
 
 import json

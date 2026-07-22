@@ -10,8 +10,13 @@ Integration branch: `main`.
 
 Post-MVP extension status on 2026-07-22: live ALBS/EDGP process adapters,
 AlmaLinux errata and OSV advisory acquisition, CycloneDX linkage validation,
-and versioned/calibrated policy profiles are implemented. The assessment and
-stage descriptions below intentionally preserve the original planning snapshot.
+and versioned/calibrated policy profiles are implemented.
+
+Document role: this is a historical plan with completion annotations, not the
+current runtime or API contract. `README.md`, `ProjectGoals.md`, and the accepted
+ADRs describe the as-built system. Proposed models, endpoints, filenames, and
+stages below intentionally preserve the original planning snapshot unless an
+explicit implementation note says otherwise.
 
 ## 1. Baseline Assessment (2026-07-21)
 
@@ -37,6 +42,8 @@ Current shape:
   - `edgp.rpm.albs_provenance.v1`
   - `edgp.albs.artifact_inventory.v1`
   - `edgp.graph.snapshot.v1`
+  - `edgp.public.advisory_feed.v1`
+  - `provenance-risk-agent.combined.v1`
 - Existing ADRs record deterministic evidence first, untrusted model input,
   real ALBS/EDGP input contracts, and coverage reporting.
 - Tests verify CLI/workflow paths, SQLite persistence, interrupt/resume, REST,
@@ -45,12 +52,13 @@ Current shape:
 Implementation outcome:
 
 - FastAPI, web UI, Docker Compose, SQLite event log and checkpoints are present.
-- MCP exposes ten normalized capabilities over the deterministic workflow.
+- MCP exposes eleven normalized capabilities over the deterministic workflow.
 - Risk, completeness, confidence, contradictions, policy, decision and trace
   are first-class Pydantic contracts.
 - The primary vertical slice combines ALBS and EDGP evidence in one result.
-- The MVP adapter boundary remains file-based JSON; process, HTTP, SQLite or
-  library adapters remain post-MVP extension points.
+- At the original MVP cutoff, the adapter boundary was file-based JSON. ADR
+  0006 and the post-MVP implementation now add bounded live process and HTTP
+  acquisition while retaining JSON as the typed internal and replay contract.
 
 ### ALBS Provenance Explorer
 
@@ -294,17 +302,17 @@ Initial adapter interfaces should be Python protocols or abstract base classes:
 ```python
 class ProvenanceEvidenceAdapter(Protocol):
     def resolve_artifact(self, selector: ArtifactSelector) -> ArtifactIdentity: ...
-    def inspect_build_provenance(self, artifact: ArtifactIdentity) -> EvidenceBundle: ...
-    def verify_integrity(self, artifact: ArtifactIdentity) -> EvidenceBundle: ...
+    def get_build_provenance_assessment(self, artifact: ArtifactIdentity) -> EvidenceBundle: ...
+    def get_signature_integrity_assessment(self, artifact: ArtifactIdentity) -> EvidenceBundle: ...
     def compare_builds(self, left: ArtifactIdentity, right: ArtifactIdentity) -> EvidenceBundle: ...
 ```
 
 ```python
 class DependencyIntelligenceAdapter(Protocol):
-    def query_dependencies(self, artifact: ArtifactIdentity) -> EvidenceBundle: ...
-    def query_reverse_dependencies(self, artifact: ArtifactIdentity) -> EvidenceBundle: ...
+    def get_direct_dependencies(self, artifact: ArtifactIdentity) -> EvidenceBundle: ...
+    def get_reverse_dependencies(self, artifact: ArtifactIdentity) -> EvidenceBundle: ...
     def calculate_blast_radius(self, artifact: ArtifactIdentity) -> EvidenceBundle: ...
-    def retrieve_vulnerabilities(self, artifact: ArtifactIdentity) -> EvidenceBundle: ...
+    def get_vulnerability_assessment(self, artifact: ArtifactIdentity) -> EvidenceBundle: ...
     def compare_snapshots(self, left: SnapshotRef, right: SnapshotRef) -> EvidenceBundle: ...
 ```
 
@@ -351,14 +359,15 @@ Rationale:
 Initial MCP tools:
 
 - `resolve_artifact_identity`
-- `inspect_build_provenance`
-- `verify_signature_or_integrity`
-- `query_dependencies`
-- `query_reverse_dependencies`
+- `get_build_provenance_assessment`
+- `get_signature_integrity_assessment`
+- `get_direct_dependencies`
+- `get_reverse_dependencies`
 - `calculate_blast_radius`
-- `retrieve_vulnerabilities`
+- `get_vulnerability_assessment`
 - `evaluate_policy`
 - `evaluate_artifact_risk`
+- `evaluate_live_artifact`
 - `explain_decision`
 
 MCP is an agent/tool boundary. It should not replace the stable REST API for
@@ -470,7 +479,7 @@ Golden evaluation harness:
 
 Metrics to record per golden case:
 
-- Correct tool selection.
+- Expected deterministic evidence codes.
 - Evidence retrieval completeness.
 - Deterministic policy correctness.
 - Decision correctness.
@@ -482,7 +491,7 @@ Metrics to record per golden case:
 - Latency and tool-call count.
 - Final-answer grounding.
 
-## 10. Current Constraints and Post-MVP Decisions
+## 10. Original Constraints and Post-MVP Questions
 
 Risks:
 
@@ -685,7 +694,7 @@ Create or update:
 Acceptance criteria:
 
 - Golden cases cover the required representative scenarios.
-- Harness verifies unsupported-claim detection, tool selection, policy,
+- Harness verifies unsupported-claim detection, expected evidence, policy,
   decision, completeness, contradictions, bounded execution, and trace.
 - Evaluation runs without private infrastructure or an LLM provider.
 

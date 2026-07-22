@@ -1,3 +1,10 @@
+"""Deterministic proposal routing for completed evidence assessments.
+
+Derives ALLOW, REVIEW, or UNKNOWN from risk, completeness, confidence,
+contradictions, and policy thresholds. Human review may produce DENY, while
+operational failures are represented as ERROR by the service layer.
+"""
+
 from __future__ import annotations
 
 from .contracts import (

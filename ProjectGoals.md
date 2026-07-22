@@ -44,7 +44,8 @@ service, UI, CLI, MCP, and container delivery.
 
 In scope:
 
-- Natural-language investigation entry points.
+- Investigation-question capture and grounded answers; dynamic intent parsing
+  and tool selection remain a post-MVP capability.
 - Explicit LangGraph workflow state, nodes, routing, retries, and review stops.
 - LangChain tools as typed adapter boundaries.
 - Deterministic evidence extraction and normalization.
@@ -80,17 +81,18 @@ reverse dependencies, shortest paths, blast radius, repository diffs,
 ALBS/RPM joins, advisory overlays, vulnerability findings, and graph-derived
 supply-chain evidence.
 
-Provenance Risk Agent owns the investigation layer: user intent, planning,
-controlled tool selection, workflow state, evidence normalization, policy
-evaluation, risk/completeness/confidence separation, explanation, traceability,
-and delivery surfaces.
+In the target architecture, Provenance Risk Agent owns the investigation
+layer: user intent, planning, controlled tool selection, workflow state,
+evidence normalization, policy evaluation, risk/completeness/confidence
+separation, explanation, traceability, and delivery surfaces. The current MVP
+implements this boundary with the fixed evidence plan described below.
 
 ## Agentic Boundary
 
 Agentic behavior lives in bounded workflow orchestration, not in giving the LLM
 authority over the analytical core.
 
-The agent may:
+The target boundary allows the agent to:
 
 - interpret a user question;
 - build a bounded investigation plan;
@@ -101,8 +103,13 @@ The agent may:
 - apply policy rules;
 - synthesize a grounded explanation.
 
-The LLM may help with intent interpretation and explanation, but it must not
-create, modify, or override:
+The current MVP runs a fixed, bounded evidence plan for every investigation.
+It records the question but does not use an LLM to interpret intent or choose
+tools. A future planner may add those capabilities without changing the
+deterministic analytical boundary.
+
+The LLM may eventually help with intent interpretation and currently supports
+explanation, but it must not create, modify, or override:
 
 - evidence records;
 - package facts;
@@ -138,6 +145,10 @@ Decision states:
 - `UNKNOWN`
 - `ERROR`
 
+The built-in profiles currently propose `ALLOW`, `REVIEW`, or `UNKNOWN`.
+Operational failures produce `ERROR`; `DENY` is available through explicit
+human review and is not inferred by the optional LLM.
+
 The policy layer is the rulebook. Evidence is checked against explicit rules,
 and every material conclusion must cite the facts that support it.
 
@@ -172,6 +183,10 @@ source pointers, detects missing and contradictory evidence, computes separate
 risk/completeness/confidence assessments, applies explicit policy rules,
 supports human interrupt/resume, and renders Markdown, JSON, REST, UI, or MCP
 output.
+
+The current graph executes a fixed evidence plan. The investigation question
+is persisted for traceability and presentation but does not yet change tool
+selection or workflow topology.
 
 The live extension invokes pinned ALBS/EDGP versions, validates and hashes an
 official AlmaLinux errata snapshot, queries the OSV exact-package API, validates
@@ -211,7 +226,7 @@ provenance-agent evaluate-golden
 provenance-agent calibrate-policy
 ```
 
-The 2026-07-22 local baseline is 47 passing pytest cases, Ruff passing, 10/10
+The 2026-07-22 local baseline is 50 passing pytest cases, Ruff passing, 10/10
 golden scenarios passing, and a passing default-versus-strict calibration
 report. One upstream Starlette/httpx deprecation warning remains non-fatal.
 

@@ -4,303 +4,383 @@
 [![English slides](https://img.shields.io/badge/slides-English-246BFD?logo=html5&logoColor=white)](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index-en.html)
 [![Polish slides](https://img.shields.io/badge/slides-Polish-20AD82?logo=html5&logoColor=white)](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index.html)
 
-Enterprise Linux Provenance Risk Agent is a container-first agentic application
-for explainable Enterprise Linux artifact risk analysis.
+**An evidence-first control plane for Enterprise Linux software supply-chain
+investigations.**
 
-The project has evolved from a compact LangChain/LangGraph learning harness
-into a runnable local application with a web UI, REST API, MCP interface, typed
-evidence contracts, deterministic policy evaluation, and grounded explanations.
+The agent orchestrates ALBS Provenance Explorer and Enterprise Dependency Graph
+Pipeline (EDGP), which acquire artifacts and produce deterministic domain
+assessments. It validates and reconciles those assessments with AlmaLinux errata
+and OSV advisory context, then produces a traceable risk verdict. Given an ALBS
+build ID or saved export, it returns verified facts, weighted findings,
+coverage, confidence, a proposed decision, and the complete execution trace.
+Acquisition is bounded and traceable; normalization, scoring, policy, and the
+proposed decision are deterministic for the acquired inputs. An LLM is
+optional and limited to grounded explanation.
 
-The agent acquires live evidence from ALBS Provenance Explorer, Enterprise
-Dependency Graph Pipeline (EDGP), the official AlmaLinux errata feed, and OSV.
-It also accepts saved exports for reproducible analysis. Deterministic code
-calculates evidence, risk, completeness, confidence, policy, and decisions; an
-LLM is used only for optional explanation and cannot modify those results.
+**Status:** runnable local MVP with live acquisition, saved-input replay, web,
+REST, CLI, and MCP interfaces. The current implementation is single-service and
+SQLite-backed; its production boundaries are documented below.
 
 ## Vision, Scope, and Goal
 
-The project vision is straightforward: Enterprise Linux supply-chain tools
-should expose an interface that matches how quickly modern investigations have
-to move.
-ALBS Provenance Explorer and EDGP already provide strong deterministic
-capabilities, but their command-line surfaces have many commands, parameters,
-source contracts, and cross-tool combinations. Without an orchestration layer,
-the human operator becomes the agent: choosing commands, remembering flags,
-translating artifact identities, joining outputs, checking policy implications,
-and tracking which evidence supports which conclusion.
+ALBS Provenance Explorer and EDGP expose substantial deterministic capability,
+but using them together requires an operator to select commands, manage many
+parameters, reconcile artifact identities, join outputs, and map evidence to
+policy. At that point, the human has effectively become the orchestration
+agent.
 
-This project makes that agentic layer explicit and programmatic. The agentic
-behavior lives in bounded workflow orchestration, tool selection, state
-management, evidence normalization, missing-evidence detection, contradiction
-detection, policy evaluation, and grounded synthesis. An LLM can help interpret
-intent and explain results, but it is not the authority for evidence, risk,
-completeness, confidence, or decision states.
+This project makes that role explicit and programmable. It behaves less like a
+chatbot and more like a specialized software supply-chain security officer: it
+investigates an artifact, checks evidence, applies a versioned rulebook,
+identifies missing or contradictory facts, and produces a verdict with source
+pointers. A human or downstream system remains responsible for accepting,
+reviewing, or rejecting that verdict.
 
-In this architecture, the agent behaves less like a chatbot and more like a
-specialized security officer for software supply-chain evidence. It investigates
-an artifact, verifies deterministic evidence, applies policy rules, identifies
-missing or contradictory facts, and produces a verdict. The verdict is not an
-unsupported model opinion: it must be backed by evidence records and rule
-results, with enough traceability for a human or downstream system to accept,
-request review, or route it to a policy decision.
+The goal is narrow by design: provide a faster and safer interface over ALBS
+and EDGP for answering three questions:
 
-The policy layer plays the role of the rulebook: evidence is checked against
-explicit rules, and every material conclusion must cite the facts that support
-it.
+1. Why is this artifact risky?
+2. Which evidence supports that conclusion?
+3. Is the evidence complete and consistent enough to trust the verdict?
 
-The scope is intentionally narrow: the agent sits above ALBS Provenance
-Explorer and EDGP, uses them as source engines, and presents their combined
-evidence through UI, REST, CLI, and MCP. It is not a generic chatbot and it
-does not replace deterministic provenance, graph, vulnerability, or policy
-logic. The goal is to give existing tools a faster, safer, inspectable
-interface for asking: why is this artifact risky, what evidence supports that
-answer, and is there enough evidence to trust the decision?
+The agent does not replace provenance engines, vulnerability feeds, or
+organizational authorization. It turns their outputs into one inspectable
+decision process.
 
-## MVP Goal
+## Design Principles
 
-The MVP goal is a runnable demonstrator where a user can start the application
-with:
+- **Evidence before inference.** Every material finding has a stable evidence
+  ID and source pointer.
+- **Deterministic authority.** Code owns facts, risk, completeness, confidence,
+  policy, contradictions, and the proposed machine decision.
+- **Explicit uncertainty.** Missing, stale, truncated, contradictory, or
+  unavailable evidence is never translated into a clean result.
+- **One workflow, multiple surfaces.** Web, REST, CLI, and MCP use the same
+  LangGraph investigation graph.
+- **Governed policy.** Risk weights and decision thresholds live in immutable,
+  versioned profiles and are checked against an executable calibration suite.
+- **Optional LLM.** A model may explain an existing result; it cannot invent or
+  modify evidence or the verdict.
+
+## Quick Start
+
+Start the containerized application:
 
 ```bash
 docker compose up --build
 ```
 
-Then open the UI, select a supplied Enterprise Linux artifact, ask why it is
-risky, and receive:
+Open [http://localhost:8080](http://localhost:8080) for the investigation UI or
+[http://localhost:8080/docs](http://localhost:8080/docs) for the OpenAPI
+contract. The curated `Albs Edgp Risk Case` works offline and demonstrates a
+combined ALBS/EDGP verdict.
 
-- a deterministic risk assessment;
-- an explicit decision state;
-- evidence completeness;
-- confidence assessment;
-- grounded explanation with evidence identifiers;
-- visible tool and workflow trace;
-- evidence integrated from both ALBS Provenance Explorer and EDGP;
-- no unsupported claims in the golden evaluation harness.
+Run the same deterministic workflow from the CLI:
 
-The planning baseline is
-[`docs/planning/initial-demonstrator-plan.md`](docs/planning/initial-demonstrator-plan.md).
-The educational build log is
-[`learning-process.md`](learning-process.md).
+```bash
+python -m venv .venv
+. .venv/bin/activate
+pip install -e '.[dev]'
+provenance-agent analyze examples/albs-edgp-risk-case.json
+```
 
-The project overview is also available as interactive HTML slide decks. Open
-the [English presentation](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index-en.html)
-or inspect its [HTML source](docs/presentation/index-en.html). The
-[Polish presentation](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index.html)
-and [source](docs/presentation/index.html) remain available too.
+Run a live investigation:
 
-## What This Project Demonstrates
+```bash
+pip install -e '.[live]'
+provenance-agent analyze-live 57810 \
+  --package nginx-core \
+  --arch x86_64 \
+  --ecosystem AlmaLinux:10 \
+  --sbom /path/to/build-57810.cyclonedx.json \
+  --policy-profile enterprise-linux-default@1.0.0
+```
 
-It is deliberately not a generic chatbot.
+Omitting `--sbom` is allowed, but the missing coverage remains visible in the
+result. Advisory failures are retried within a bounded budget and reported as
+incomplete coverage, never as zero vulnerabilities. Failure of a required
+ALBS or EDGP acquisition ends the investigation as `ERROR` after bounded retry.
 
-It demonstrates:
-
-- LangChain tools as typed adapters over provenance data;
-- LangChain prompt/model composition for evidence-grounded explanation;
-- LangGraph state, nodes, conditional routing and checkpoints;
-- separation of deterministic security logic from probabilistic narration;
-- stable evidence IDs and source pointers across ALBS and EDGP records;
-- persistent human review with LangGraph interrupt/resume;
-- one normalized MCP interface over the deterministic investigation graph.
-
-## Target Architecture
+## Architecture
 
 ```mermaid
 flowchart TB
-  subgraph access["Access layer"]
-    direction LR
-    client["Browser / CLI / MCP client"]:::client;
-    web_ui["Minimal web UI"]:::entry;
-    api_service["FastAPI service"]:::entry;
-    mcp_server["MCP server"]:::entry;
+  subgraph interfaces["Interfaces"]
+    ui["Web UI"]:::interface
+    rest["REST API"]:::interface
+    cli["CLI"]:::interface
+    mcp["MCP"]:::interface
   end
 
   subgraph control["Agent control plane"]
-    direction TB
-    workflow["LangGraph investigation workflow"]:::workflow;
-    adapter_tools["Controlled adapter tools"]:::workflow;
-    checkpoints["SQLite checkpoints<br/>interrupt and resume"]:::workflow;
+    graph["LangGraph investigation workflow"]:::control
+    state["SQLite events and checkpoints<br/>interrupt / resume"]:::control
+    adapters["Bounded process and HTTP adapters"]:::control
   end
 
-  subgraph sources["Source evidence engines"]
-    direction LR
-    albs_engine["ALBS Provenance Explorer<br/>build, lineage, CAS, signatures"]:::source;
-    edgp_engine["EDGP<br/>dependencies, advisories, impact"]:::source;
-    advisory_feeds["AlmaLinux errata + OSV<br/>distribution and CVE evidence"]:::source;
+  subgraph sources["Assessment engines and inputs"]
+    albs["ALBS Provenance Explorer<br/>acquisition + provenance assessment"]:::source
+    edgp["EDGP<br/>acquisition + graph assessment"]:::source
+    feeds["AlmaLinux errata + OSV<br/>advisory and CVE context"]:::source
+    exports["Saved exports<br/>deterministic replay"]:::source
   end
 
-  subgraph decisioning["Decision pipeline"]
-    direction TB
-    evidence_records["Normalized evidence records"]:::evidence;
-    consistency["Missing evidence<br/>and contradictions"]:::policy;
-    profiles["Versioned policy profiles<br/>weights and thresholds"]:::policy;
-    policy_engine["Deterministic policy<br/>and risk"]:::policy;
-    assessment["Completeness and confidence"]:::policy;
-    review["Human review<br/>when required"]:::result;
-    explainer["Grounded explanation<br/>LLM optional"]:::explain;
-    response["Decision, findings,<br/>evidence IDs, trace"]:::result;
-    delivery["Rendered in UI<br/>returned by REST or MCP"]:::client;
+  subgraph decision["Deterministic decision path"]
+    normalize["Normalize evidence<br/>stable IDs and source pointers"]:::evidence
+    verify["Check completeness<br/>freshness and contradictions"]:::policy
+    profiles["Versioned policy profile<br/>weights and thresholds"]:::policy
+    verdict["Risk + confidence + verdict"]:::result
+    review["Human review when required"]:::review
+    explain["Grounded explanation<br/>LLM optional"]:::explain
   end
 
-  client --> web_ui;
-  client --> api_service;
-  client --> mcp_server;
-  web_ui --> api_service;
-  api_service --> workflow;
-  mcp_server --> workflow;
-  workflow --> adapter_tools;
-  workflow <--> checkpoints;
-  adapter_tools --> albs_engine;
-  adapter_tools --> edgp_engine;
-  adapter_tools --> advisory_feeds;
-  albs_engine --> evidence_records;
-  edgp_engine --> evidence_records;
-  advisory_feeds --> evidence_records;
-  evidence_records --> consistency;
-  profiles --> policy_engine;
-  consistency --> policy_engine;
-  policy_engine --> assessment;
-  assessment --> review;
-  review --> explainer;
-  explainer --> response;
-  response --> delivery;
+  ui --> graph
+  rest --> graph
+  cli --> graph
+  mcp --> graph
+  graph <--> state
+  graph --> adapters
+  adapters --> albs
+  adapters --> edgp
+  adapters --> feeds
+  graph --> exports
+  albs --> normalize
+  edgp --> normalize
+  feeds --> normalize
+  exports --> normalize
+  normalize --> verify
+  profiles --> verdict
+  verify --> verdict
+  verdict --> review
+  verdict --> explain
+  review --> explain
 
-  classDef client fill:#dbeafe,stroke:#2563eb,color:#0f172a,stroke-width:2px;
-  classDef entry fill:#dcfce7,stroke:#16a34a,color:#052e16,stroke-width:2px;
-  classDef workflow fill:#fef3c7,stroke:#d97706,color:#422006,stroke-width:2px;
+  classDef interface fill:#dbeafe,stroke:#2563eb,color:#0f172a,stroke-width:2px;
+  classDef control fill:#fef3c7,stroke:#d97706,color:#422006,stroke-width:2px;
   classDef source fill:#fce7f3,stroke:#db2777,color:#500724,stroke-width:2px;
   classDef evidence fill:#ede9fe,stroke:#7c3aed,color:#2e1065,stroke-width:2px;
   classDef policy fill:#cffafe,stroke:#0891b2,color:#164e63,stroke-width:2px;
+  classDef result fill:#dcfce7,stroke:#16a34a,color:#052e16,stroke-width:2px;
+  classDef review fill:#fee2e2,stroke:#dc2626,color:#450a0a,stroke-width:2px;
   classDef explain fill:#fae8ff,stroke:#c026d3,color:#581c87,stroke-width:2px;
-  classDef result fill:#fee2e2,stroke:#dc2626,color:#450a0a,stroke-width:2px;
 
-  style access fill:#0b1220,stroke:#60a5fa,stroke-width:2px,color:#dbeafe;
-  style control fill:#1c1917,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
-  style sources fill:#1f1020,stroke:#f472b6,stroke-width:2px,color:#fce7f3;
-  style decisioning fill:#111827,stroke:#22d3ee,stroke-width:2px,color:#cffafe;
+  style interfaces fill:#0b1220,stroke:#60a5fa,color:#dbeafe;
+  style control fill:#1c1917,stroke:#f59e0b,color:#fef3c7;
+  style sources fill:#1f1020,stroke:#f472b6,color:#fce7f3;
+  style decision fill:#111827,stroke:#22d3ee,color:#cffafe;
 ```
 
-Deterministic code owns evidence retrieval, normalization, policy evaluation,
-risk scoring, evidence completeness, confidence, contradictions, and final
-decision state. The model may help interpret intent, plan bounded
-investigations, and explain already-computed evidence.
+LangGraph owns bounded orchestration and review routing. ALBS and EDGP remain
+responsible for acquiring domain artifacts and producing their expert
+assessments. The agent validates, normalizes, and reconciles those assessments;
+the policy layer acts as a rulebook over the resulting evidence, not as a
+substitute for it.
 
-## Workflow
+### Implementation-Aware Runtime Sequence
+
+This view connects the architectural flow to the modules and methods that
+implement it. It follows one investigation across all delivery surfaces; saved
+replay bypasses the live acquisition branch but enters the same deterministic
+workflow.
 
 ```mermaid
-flowchart TD
-  request(["Investigation request"]):::start;
-  load["Acquire live evidence or<br/>load and normalize export"]:::io;
-  facts["Collect verified facts<br/>coverage observations"]:::deterministic;
-  evidence["Collect risk evidence<br/>policy-relevant findings"]:::deterministic;
-  consistency["Detect missing and<br/>contradictory evidence"]:::deterministic;
-  score["Risk, completeness,<br/>confidence and policy"]:::policy;
-  verdict["Propose deterministic verdict"]:::policy;
-  route{"Requires human review?"}:::decision;
-  explain["Generate grounded explanation<br/>LLM optional"]:::explain;
-  review["LangGraph interrupt<br/>persist and resume"]:::review;
-  report["Render report<br/>facts, evidence, score, trace"]:::result;
-  done(["Workflow complete"]):::done;
+sequenceDiagram
+  autonumber
+  actor User as Operator / downstream system
 
-  request --> load;
-  load --> facts;
-  facts --> evidence;
-  evidence --> consistency;
-  consistency --> score;
-  score --> verdict;
-  verdict --> route;
-  route -- "no" --> explain;
-  route -- "yes" --> review;
-  explain --> report;
-  review --> explain;
-  report --> done;
+  box rgb(219, 234, 254) Delivery
+    participant Surface as REST / CLI / MCP
+  end
+  box rgb(254, 243, 199) Orchestration
+    participant Service as InvestigationService<br/>service.py
+    participant Graph as LangGraph workflow<br/>workflow.py
+  end
+  box rgb(252, 231, 243) Acquisition boundary
+    participant Acquire as LiveAcquirer<br/>live.py
+    participant Sources as ALBS / EDGP / feeds
+  end
+  box rgb(207, 250, 254) Deterministic assessment
+    participant Rules as tools.py / risk.py<br/>policy.py / decision.py
+  end
+  box rgb(220, 252, 231) Persistence
+    participant Store as InvestigationStore<br/>SQLite + SqliteSaver
+  end
 
-  classDef start fill:#dbeafe,stroke:#2563eb,color:#0f172a,stroke-width:2px;
-  classDef io fill:#dcfce7,stroke:#16a34a,color:#052e16,stroke-width:2px;
-  classDef deterministic fill:#fef3c7,stroke:#d97706,color:#422006,stroke-width:2px;
-  classDef policy fill:#cffafe,stroke:#0891b2,color:#164e63,stroke-width:2px;
-  classDef decision fill:#ede9fe,stroke:#7c3aed,color:#2e1065,stroke-width:2px;
-  classDef explain fill:#fae8ff,stroke:#c026d3,color:#581c87,stroke-width:2px;
-  classDef review fill:#fee2e2,stroke:#dc2626,color:#450a0a,stroke-width:2px;
-  classDef result fill:#fce7f3,stroke:#db2777,color:#500724,stroke-width:2px;
-  classDef done fill:#e0f2fe,stroke:#0284c7,color:#082f49,stroke-width:2px;
+  User->>Surface: Submit InvestigationRequest
+  Surface->>Service: run_investigation(request)
+  Service->>Store: create_investigation() + add_event()
+  Service->>Graph: build_graph() + run_with_retry(graph.invoke)
+  Graph->>Graph: load_node()
+
+  alt LiveArtifactRequest
+    Graph->>Acquire: LiveAcquirer.acquire(request)
+    Acquire->>Sources: EDGP artifact inventory(build_id)
+    Sources-->>Acquire: Inventory assessment
+    Acquire->>Sources: AlmaLinux errata snapshot
+    Sources-->>Acquire: Validated and hashed snapshot
+    Acquire->>Sources: ALBS trust-path(build_id, errata, SBOM)
+    Sources-->>Acquire: Provenance assessment
+    Acquire->>Sources: OSV query + EDGP advisory normalization
+    Sources-->>Acquire: Vulnerability assessment
+    Acquire->>Acquire: Validate schema, scope, freshness, linkage, and traces
+    Acquire-->>Graph: Normalized combined assessment
+  else Saved assessment replay
+    Graph->>Graph: load_export() + normalize_export()
+  end
+
+  Graph->>Rules: collect_observations_node() + collect_evidence_node()
+  Rules-->>Graph: Verified facts + weighted findings with stable IDs
+  Graph->>Rules: detect_contradictions() + assess risk, coverage, confidence
+  Rules-->>Graph: Independent deterministic assessments
+  Graph->>Rules: evaluate_policy() + decide()
+  Rules-->>Graph: Proposed verdict + explicit rule results
+
+  alt REVIEW and checkpointing enabled
+    Graph->>Store: interrupt() + persist checkpoint
+    Graph-->>Service: Awaiting-review state
+    Service->>Store: save_result(status=awaiting_review)
+    Service-->>Surface: ReviewRequest + supporting evidence IDs
+    Surface-->>User: Request human decision
+    User->>Surface: Submit ReviewDecision
+    Surface->>Service: resume_investigation()
+    Service->>Graph: graph.invoke(Command(resume=review))
+    Graph->>Graph: review_node() applies the human decision
+  else No blocking review
+    Graph->>Graph: route_after_decision()
+  end
+
+  alt Explanation model configured
+    Graph->>Graph: llm_explanation() over cited evidence only
+  else Deterministic explanation
+    Graph->>Graph: deterministic_explanation()
+  end
+
+  Graph->>Graph: render_node()
+  Graph-->>Service: Workflow result + report + trace
+  Service->>Store: Persist evidence, events, traces, and verdict
+  Store-->>Service: Stored InvestigationResult
+  Service-->>Surface: InvestigationResult
+  Surface-->>User: Verdict, evidence, coverage, confidence, and trace
 ```
 
-Review uses LangGraph `interrupt()` and a SQLite checkpointer. A submitted
-decision resumes the same workflow state and preserves the deterministic
-proposed verdict separately from the human decision.
+## Decision Model
 
-## MVP Roadmap
+The report keeps four concepts separate:
 
-1. **Contracts and fixture catalog - complete**
-   Add Pydantic contracts for artifact identity, evidence records, findings,
-   policy results, decisions, completeness, confidence, and tool traces.
-2. **Two-engine vertical slice - complete**
-   Answer one question for one supplied artifact using ALBS provenance evidence
-   and EDGP dependency, advisory, or impact evidence in the same result.
-3. **Policy, risk, completeness, confidence - complete**
-   Keep risk, evidence completeness, and confidence as separate deterministic
-   outputs. Missing evidence must not be reported as proof of safety.
-4. **FastAPI service - complete**
-   Add health/readiness, example listing, investigation, event, evidence,
-   finding, and direct evaluation endpoints.
-5. **Minimal web UI - complete**
-   Provide a restrained investigation screen for selecting an artifact, asking
-   the default question, and viewing evidence, findings, trace, risk,
-   completeness, confidence, and decision.
-6. **Docker Compose demonstrator - complete**
-   Package the app so `docker compose up --build` starts the UI/API/MCP-ready
-   service with curated fixtures.
-7. **MCP and golden evaluation - complete**
-   Expose normalized investigation capabilities through MCP and add golden
-   cases for missing signatures, unknown builders, vulnerabilities, incomplete
-   provenance, contradictions, timeouts, malformed data, and prompt injection.
-8. **Production-shaped acquisition and policy governance - complete**
-   Invoke pinned ALBS/EDGP adapters, enrich exact package versions from OSV,
-   validate CycloneDX linkage and errata coverage, and calibrate immutable
-   versioned policy profiles against the golden dataset.
+| Output | Meaning |
+| --- | --- |
+| Risk | Weighted severity of evidence-backed findings. |
+| Completeness | Required evidence categories that were actually checked. |
+| Confidence | Reliability of the verdict given coverage and contradictions. |
+| Decision | `ALLOW`, `DENY`, `REVIEW`, `UNKNOWN`, or `ERROR`. |
 
-The MVP roadmap is implemented. The application includes typed contracts,
-stable evidence IDs, source pointers, explicit decision modules, cross-source
-contradiction detection, bounded retries, a FastAPI service, web UI, SQLite
-event log and LangGraph checkpoints, Docker Compose packaging, eleven MCP
-tools, and a ten-case offline golden evaluation suite.
+With the built-in profiles, deterministic analysis proposes `ALLOW`, `REVIEW`,
+or `UNKNOWN`. `ERROR` represents an operational failure, while `DENY` is
+currently available as an explicit human-review outcome rather than an
+automatic model or score decision.
 
-## Current Implementation State
+This separation is load-bearing. `risk=0` does not imply safety when evidence is
+missing. `ALLOW` requires zero risk, no contradictions, complete required
+coverage, and sufficient confidence. A source timeout lowers coverage; it does
+not produce a clean vulnerability result.
 
-The repository currently contains a complete local MVP plus its live
-acquisition extension:
+Human review uses LangGraph `interrupt()` with a SQLite checkpointer. Resuming
+the workflow records the reviewer decision while preserving the original
+deterministic proposal.
 
-- live adapters invoke pinned ALBS Provenance Explorer and narrow EDGP library
-  bridge processes without a shell and normalize their JSON contracts;
-- the OSV API supplies exact package/version advisory records that EDGP
-  normalizes, while ALBS checks a validated and SHA-256-recorded snapshot of
-  the official AlmaLinux errata feed;
-- CycloneDX SBOM input is size/schema/inventory checked, SHA-256 recorded, and
-  accepted as coverage only when ALBS links it with `described_by`;
-- saved-input adapters normalize ALBS/EDGP/advisory contracts plus the combined
-  and compatibility fixture formats;
-- immutable `enterprise-linux-default@1.0.0` and
-  `enterprise-linux-strict@1.0.0` profiles own risk weights and thresholds;
-- `calibrate-policy` proves the default 10/10 baseline and strict-profile
-  monotonicity on the golden dataset;
-- deterministic modules own evidence identity, contradictions, risk,
-  completeness, confidence, policy, and decision routing;
-- LangGraph runs the investigation and persists optional human-review
-  interrupt/resume checkpoints in SQLite;
-- CLI, REST, web UI, and eleven MCP tools share the same analytical workflow;
-- transient adapter failures use three bounded in-process attempts with
-  persisted attempt events, while invalid input is not retried;
-- pytest covers deterministic modules, workflow, persistence, API, CLI, MCP,
-  retry behavior, review lifecycle, and the ten-case golden suite;
-- GitHub Actions runs Ruff, pytest, and the golden evaluation on Python 3.11,
-  3.12, and 3.13, with third-party action revisions pinned to immutable commit
-  SHAs.
+## Live Evidence Pipeline
 
-Execution remains single-process, persistence remains SQLite, and LLM narration
-remains optional. Multi-user concurrency, telemetry, durable process-level job
-recovery, and production-governed calibration data remain post-MVP work.
+A live request follows a controlled sequence:
 
-Local quality gates:
+1. EDGP resolves the build inventory and the target AlmaLinux ecosystem.
+2. The inventory is scoped to the exact package, version-release, and
+   architecture selected by ALBS.
+3. The AlmaLinux errata snapshot is fetched, structurally validated, hashed,
+   and passed to ALBS as the same validated temporary file.
+4. ALBS builds the trust path and proves CycloneDX linkage through a
+   `described_by` edge.
+5. OSV is queried for the exact package and version; EDGP normalizes the
+   returned advisory records.
+6. The selected policy profile assigns weights, checks coverage, and emits a
+   verdict with acquisition traces and response hashes.
+
+| Producer or input | Role | Trust control |
+| --- | --- | --- |
+| ALBS Provenance Explorer | Acquires build artifacts and assesses lineage, CAS, signatures, release, SBOM and errata association | Pinned revision, typed schema, bounded subprocess |
+| EDGP | Acquires graph inputs and assesses inventory, dependencies, impact and advisories | Pinned revision, narrow library bridge, exact artifact scoping |
+| [AlmaLinux errata](https://wiki.almalinux.org/documentation/errata.html) | Distribution advisory snapshot | HTTPS, structural validation, SHA-256 trace |
+| [OSV API](https://google.github.io/osv.dev/api/) | Exact package/version vulnerability query | HTTPS, freshness and truncation checks |
+
+The Docker image pins the source engines to immutable Git revisions:
+
+- ALBS Provenance Explorer: `9d33703ae923e03f3c77bd0d27a3c58ae37d638f`
+- EDGP: `4ca0b0042bfe7b91b45b27f0af6054b3847afef6`
+
+Official source hosts are allowlisted by default. Controlled deployments can
+add private mirrors through the comma-separated
+`PROVENANCE_AGENT_ALLOWED_LIVE_HOSTS` environment variable.
+
+## Policy Profiles
+
+Two built-in profiles demonstrate explicit policy governance:
+
+| Profile | Intended use |
+| --- | --- |
+| `enterprise-linux-default@1.0.0` | Preserves the validated MVP baseline. |
+| `enterprise-linux-strict@1.0.0` | Raises weights and review sensitivity for release gates. |
+
+Inspect and compare them with:
+
+```bash
+provenance-agent policy-profiles
+provenance-agent calibrate-policy
+```
+
+Calibration currently proves deterministic baseline compatibility and
+strict-profile monotonicity on the golden dataset. It is a governance check,
+not statistical calibration against production labels.
+
+## Interfaces
+
+| Surface | Entry point |
+| --- | --- |
+| Web UI | `http://localhost:8080` |
+| OpenAPI / REST | `http://localhost:8080/docs` |
+| Saved analysis | `provenance-agent analyze INPUT.json` |
+| Live analysis | `provenance-agent analyze-live BUILD_ID ...` |
+| MCP over stdio | `provenance-agent mcp` |
+| MCP over HTTP or SSE | `provenance-agent mcp --transport streamable-http` or `--transport sse` |
+
+Full evaluation entry points return the same core artifacts: verified facts,
+weighted risk evidence, evidence IDs, source pointers, contradictions, policy
+results, completeness, confidence, decision state, and execution trace.
+
+Saved replay supports these source contracts:
+
+- `albs-provenance-explorer/v1`
+- `edgp.rpm.albs_provenance.v1`
+- `edgp.albs.artifact_inventory.v1`
+- `edgp.graph.snapshot.v1`
+- `edgp.public.advisory_feed.v1`
+
+The compact fixture format under `examples/` remains available for learning
+and deterministic tests; it is not the preferred production input.
+
+### Optional LLM Explanation
+
+```bash
+pip install -e '.[openai]'
+export OPENAI_API_KEY=...
+provenance-agent analyze examples/suspicious-build.json \
+  --model openai:gpt-4.1-mini
+```
+
+The model is selected at runtime. The workflow does not depend on one provider,
+and the model cannot change deterministic outputs.
+
+## Verification
+
+Run the local quality gates:
 
 ```bash
 pip install -e '.[dev]'
@@ -310,223 +390,67 @@ provenance-agent evaluate-golden
 provenance-agent calibrate-policy
 ```
 
-Latest local validation on 2026-07-22: Ruff passed, pytest reported 47 passed,
-all 10 golden cases passed, and policy calibration passed. A containerized live
-run for ALBS build 57810 also completed through ALBS, EDGP, AlmaLinux errata,
-OSV, and CycloneDX linkage with no contradictory evidence. Pytest reports one
-upstream Starlette/httpx deprecation warning; it does not affect deterministic
-results.
+Verified baseline on 2026-07-22:
 
-## Input Contract
+- Ruff passed.
+- Pytest passed: **50 tests**.
+- Golden evaluation passed: **10/10 scenarios**.
+- Default-versus-strict policy calibration passed.
+- GitHub Actions passed on Python 3.11, 3.12, and 3.13.
+- The Docker image passed dependency, readiness, CLI, and responsive UI checks.
 
-The preferred inputs are real exports from the local EDGP and ALBS projects:
+A containerized live run for ALBS build `57810` and
+`nginx-core-1.26.3-6.el10_2.3.x86_64` completed through all seven acquisition
+stages:
 
-- `albs-provenance-explorer/v1`
-- `edgp.rpm.albs_provenance.v1`
-- `edgp.albs.artifact_inventory.v1`
-- `edgp.graph.snapshot.v1`
-- `edgp.public.advisory_feed.v1`
+| Result | Value |
+| --- | --- |
+| Decision | `REVIEW` |
+| Risk | `24/100` (`low`) |
+| Completeness | `100/100` |
+| Confidence | `100/100` |
+| Advisory evidence | 3 unique OSV records |
+| Contradictions | 0 |
+| SBOM | 457 CycloneDX components, linked to the selected artifact |
 
-Completeness is evaluated against the investigation question, not only against
-the fields available in a given source contract. In particular, an ALBS graph
-needs both SBOM coverage and a checked errata state (`advisory_present` or
-`confirmed_clean`) for complete security context. Standalone EDGP provenance,
-inventory, or dependency exports do not prove vulnerability coverage; they can
-have `risk=0` while correctly returning `REVIEW` with `security_context`
-missing. `ALLOW` requires zero risk, no contradictions, and no missing required
-evidence categories.
+The result is intentionally `REVIEW` despite complete evidence: completeness
+describes the investigation, not the safety of the artifact.
 
-The small format below is kept only as a learning fixture and compatibility
-input:
+## Production Boundaries
 
-```json
-{
-  "artifact": {
-    "name": "openssl",
-    "version": "3.2.2-6.el10",
-    "digest": "sha256:..."
-  },
-  "build": {
-    "builder": "albs",
-    "signed": true,
-    "reproducible": false,
-    "source_commit": "abc123"
-  },
-  "dependencies": [
-    {"name": "glibc", "version": "2.39", "direct": true}
-  ],
-  "vulnerabilities": [
-    {"id": "CVE-2026-0001", "severity": "high", "fixed": false}
-  ],
-  "policy": {
-    "allowed_builders": ["albs"],
-    "require_signature": true,
-    "require_reproducible": false
-  }
-}
-```
+The current system is a complete local MVP, not yet a multi-tenant production
+service. Its deliberate constraints are:
 
-## Running the MVP
+- single-process execution and SQLite persistence;
+- bounded in-process retry rather than process-surviving job recovery;
+- HTTPS and response hashes rather than signed feed snapshots or transparency
+  proofs;
+- deterministic fixture calibration rather than reviewed production labels;
+- no production telemetry or service-level objectives yet.
+- a fixed evidence plan: the question is recorded for traceability, but it does
+  not yet drive dynamic intent parsing or tool selection.
 
-Run the container-first demonstrator:
+Redis, RabbitMQ, and Celery are not required for this stage. RabbitMQ/Celery
+become justified when retries must survive process termination or work must be
+distributed across workers. Redis may support caching, progress delivery,
+short-lived locks, or rate limits. Neither should become the source of truth
+for evidence or verdicts.
 
-```bash
-docker compose up --build
-```
+Next engineering milestones:
 
-Then open `http://localhost:8080`, select `Albs Edgp Risk Case`, and run the
-default investigation. That curated fixture combines ALBS provenance evidence
-with EDGP installed-RPM to ALBS artifact matching evidence in one verdict.
-The same service also exposes:
+1. Governed, versioned ALBS/EDGP evaluation snapshots with reviewed labels and
+   explicit false-positive/false-negative costs.
+2. Signed advisory snapshots or transparency verification.
+3. PostgreSQL when concurrent multi-user workloads require it.
+4. OpenTelemetry traces, operational metrics, and service-level objectives.
+5. Durable workers only after measured queueing or recovery requirements.
 
-- `GET /healthz`
-- `GET /readyz`
-- `GET /api/v1/examples`
-- `POST /api/v1/evaluate`
-- `POST /api/v1/investigations`
-- `GET /api/v1/investigations/{id}`
-- `GET /api/v1/investigations/{id}/events`
-- `GET /api/v1/investigations/{id}/evidence`
-- `GET /api/v1/investigations/{id}/findings`
-- `POST /api/v1/investigations/{id}/review`
-- `POST /api/v1/investigations/{id}/resume`
+## Project Documentation
 
-Investigation state is persisted in a SQLite event log. LangGraph checkpoints
-for paused reviews use a second SQLite database next to it. In the Compose
-setup both live under `/data` and are backed by a named volume.
-
-The local deterministic CLI workflow remains available:
-
-```bash
-python -m venv .venv
-. .venv/bin/activate
-pip install -e .
-provenance-agent analyze examples/suspicious-build.json
-```
-
-Run a live investigation against ALBS, EDGP, AlmaLinux errata, and OSV:
-
-```bash
-pip install -e '.[live]'
-provenance-agent analyze-live 57810 \
-  --package nginx-core \
-  --arch x86_64 \
-  --ecosystem AlmaLinux:10 \
-  --policy-profile enterprise-linux-default@1.0.0
-```
-
-Add `--sbom /path/to/build-57810.cyclonedx.json` to require deterministic
-CycloneDX linkage. Omitting it is allowed, but `sbom` and `security_context`
-remain missing rather than being interpreted as clean. `analyze-live` retries
-transient ALBS/EDGP failures three times; an unavailable OSV lookup is recorded
-as incomplete advisory coverage, never as zero vulnerabilities.
-
-The Docker image installs these pinned source-engine revisions:
-
-- ALBS Provenance Explorer `9d33703ae923e03f3c77bd0d27a3c58ae37d638f`;
-- EDGP `4ca0b0042bfe7b91b45b27f0af6054b3847afef6`.
-
-The defaults use the [official AlmaLinux `errata.full.json` feeds](https://wiki.almalinux.org/documentation/errata.html)
-for the detected major release and the [OSV package/version query API](https://google.github.io/osv.dev/api/).
-Both endpoints require HTTPS and can be overridden through the typed live
-request for controlled deployments. Official hosts are allowlisted by default;
-private mirror hostnames must be listed explicitly in the comma-separated
-`PROVENANCE_AGENT_ALLOWED_LIVE_HOSTS` environment variable.
-
-The primary combined MVP case can be run from the CLI too:
-
-```bash
-provenance-agent analyze examples/albs-edgp-risk-case.json
-```
-
-The UI/API can also be started from the installed CLI:
-
-```bash
-provenance-agent serve --port 8080
-```
-
-The default mode is fully local and deterministic.
-
-Programmatic output:
-
-```bash
-provenance-agent analyze examples/suspicious-build.json --format json
-```
-
-Run the offline golden evaluation:
-
-```bash
-provenance-agent evaluate-golden
-provenance-agent policy-profiles
-provenance-agent calibrate-policy
-```
-
-The suite covers a valid signed package, missing signature, unknown builder,
-unresolved vulnerability, incomplete provenance, contradictory ALBS/EDGP
-identity, large reverse-dependency impact, tool timeout and retry exhaustion,
-malformed source data, and prompt injection in package metadata.
-
-Start the MCP server over the default stdio transport:
-
-```bash
-provenance-agent mcp
-```
-
-The MCP surface exposes artifact identity, build provenance,
-signature/integrity, dependencies, reverse dependencies, blast radius,
-vulnerabilities, policy, saved and live risk evaluation, and grounded explanation.
-Streamable HTTP and SSE transports are also available with
-`--transport streamable-http` and `--transport sse`.
-
-Reports separate verified facts from risk evidence. Verified facts describe
-coverage that was present, such as ALBS signature/CAS/release coverage or EDGP
-match coverage. Risk evidence is the weighted material that changes the score.
-
-Run against the local ALBS/EDGP project contracts:
-
-```bash
-provenance-agent analyze /Users/pawel/_DEV/ALBS-provenance/albs-provenance-explorer/examples/demo-nginx-core/nginx-core-x86_64-trust.json
-provenance-agent analyze /Users/pawel/_DEV/SoftwareSupplyChain/tests/fixtures/rpm-albs-provenance.json
-provenance-agent analyze /Users/pawel/_DEV/SoftwareSupplyChain/tests/fixtures/albs-artifact-inventory.json
-```
-
-To enable LLM narration:
-
-```bash
-pip install -e '.[openai]'
-export OPENAI_API_KEY=...
-provenance-agent analyze examples/suspicious-build.json \
-  --model openai:gpt-4.1-mini
-```
-
-The model name is intentionally supplied at runtime. The core workflow does not
-depend on one provider.
-
-## Questions the MVP Is Designed to Answer
-
-- Why is this RPM considered risky?
-- Which evidence caused the score?
-- Did the binary come from an approved builder?
-- Is its signature missing or invalid?
-- Which unresolved CVEs affect the artifact?
-- What changed between two builds?
-- Should this artifact be allowed, denied, reviewed, or treated as unknown?
-
-## Planned Extension Points
-
-1. Move SQLite state to PostgreSQL when concurrent multi-user operation
-   requires it.
-2. Add OpenTelemetry traces and operational service-level objectives.
-3. Add distributed workers only for measured long-running or concurrent jobs.
-4. Expand calibration with production-governed, versioned ALBS/EDGP snapshots
-   and reviewed false-positive/false-negative labels.
-5. Add signed feed snapshots or transparency-log verification where stronger
-   source authenticity is required than HTTPS plus response digests.
-
-Redis, RabbitMQ, and Celery are deliberately not required for the MVP. Redis
-can later support caching, live progress pub/sub, short-lived locks, or rate
-limits. RabbitMQ/Celery can later support distributed workers and durable
-retry queues. The current process uses bounded in-process retry with each
-failed attempt persisted in the investigation event log. Neither a future
-broker nor its result backend should become the source of truth for evidence
-or verdicts; that belongs in the investigation store.
+- [Project goals](ProjectGoals.md)
+- [Learning process](learning-process.md)
+- [Validation harness](harness.md)
+- [Architecture decisions](docs/adr/)
+- [Initial planning baseline](docs/planning/initial-demonstrator-plan.md)
+- [English presentation](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index-en.html)
+- [Polish presentation](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index.html)

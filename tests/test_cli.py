@@ -1,3 +1,9 @@
+"""CLI integration tests for user-facing agent commands.
+
+Covers fixture and live analysis, JSON rendering, policy-profile inspection,
+and executable policy calibration behavior.
+"""
+
 import json
 from pathlib import Path
 

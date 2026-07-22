@@ -1,3 +1,9 @@
+"""Bounded retry primitives for external adapter execution.
+
+Defines retry policy and attempt records, a typed exhaustion error, and an
+executor with bounded exponential delays and transient-error classification.
+"""
+
 from __future__ import annotations
 
 import time

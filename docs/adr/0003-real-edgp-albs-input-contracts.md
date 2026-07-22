@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted.
+Accepted. ADR 0006 extends these replay contracts with live acquisition and the
+`edgp.public.advisory_feed.v1` assessment contract.
 
 ## Context
 

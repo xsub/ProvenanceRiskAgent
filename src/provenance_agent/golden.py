@@ -1,3 +1,9 @@
+"""Offline golden-suite runner for behavioral and safety regression checks.
+
+Executes investigation and timeout cases, verifies expected decisions and
+evidence properties, and returns a machine-readable aggregate report.
+"""
+
 from __future__ import annotations
 
 import json

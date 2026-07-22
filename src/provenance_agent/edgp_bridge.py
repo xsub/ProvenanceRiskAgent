@@ -1,3 +1,9 @@
+"""Narrow process bridge to supported EDGP library capabilities.
+
+Builds ALBS artifact inventories, normalizes advisory snapshots, and exposes a
+JSON command interface that isolates optional EDGP runtime dependencies.
+"""
+
 from __future__ import annotations
 
 import argparse

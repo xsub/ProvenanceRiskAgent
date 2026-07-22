@@ -1,3 +1,9 @@
+"""FastAPI delivery surface for provenance risk investigations.
+
+Defines the application factory, REST and health routes, service dependency
+helpers, error lookup, and the compact server-rendered investigation UI.
+"""
+
 from __future__ import annotations
 
 from html import escape
@@ -7,6 +13,7 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
+from . import __version__
 from .contracts import (
     DEFAULT_QUESTION,
     EvidenceRecord,
@@ -23,7 +30,7 @@ from .store import InvestigationStore
 def create_app(db_path: str | Path | None = None) -> FastAPI:
     app = FastAPI(
         title="Enterprise Linux Provenance Risk Agent",
-        version="0.2.0",
+        version=__version__,
         summary="Evidence-first software supply-chain investigation service.",
     )
     database_path = db_path or os.environ.get(

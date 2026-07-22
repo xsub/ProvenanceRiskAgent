@@ -1,3 +1,9 @@
+"""Application service coordinating acquisition, workflow, review, and storage.
+
+Defines the investigation use cases for saved and live inputs, event recording,
+LangGraph checkpointing, retry traces, persisted review, and result retrieval.
+"""
+
 from __future__ import annotations
 
 import sqlite3

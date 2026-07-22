@@ -74,11 +74,15 @@ provenance-agent analyze /Users/pawel/_DEV/SoftwareSupplyChain/tests/fixtures/al
 Run the live path when external networking is available:
 
 ```bash
+pip install -e '.[live]'
 PROVENANCE_AGENT_ALBS_GRAPH=/path/to/albs-graph \
-PROVENANCE_AGENT_EDGP=/path/to/edgp \
 provenance-agent analyze-live 57810 \
   --package nginx-core --arch x86_64 --ecosystem AlmaLinux:10
 ```
+
+The default EDGP path uses the packaged `provenance_agent.edgp_bridge`. Set
+`PROVENANCE_AGENT_EDGP` only when supplying a compatible replacement
+executable with the same JSON command contract.
 
 Run with optional LLM narration:
 

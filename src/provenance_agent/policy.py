@@ -1,3 +1,9 @@
+"""Deterministic policy evaluation over investigation assessments.
+
+Applies versioned profile thresholds to risk, completeness, confidence, and
+contradictions and emits explicit, traceable rule results.
+"""
+
 from __future__ import annotations
 
 from .contracts import (

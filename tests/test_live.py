@@ -1,3 +1,9 @@
+"""Security and contract tests for the live acquisition boundary.
+
+Covers shell-free commands, ALBS and EDGP integration, OSV failure semantics,
+SBOM and errata validation, host allowlisting, freshness, and exact scoping.
+"""
+
 from __future__ import annotations
 
 import json
@@ -5,6 +11,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from provenance_agent import __version__
 from provenance_agent.completeness import assess_completeness
 from provenance_agent.contracts import AdapterTrace, LiveArtifactRequest
 from provenance_agent.live import (
@@ -15,7 +22,10 @@ from provenance_agent.live import (
     _validate_errata_feed,
 )
 from provenance_agent.normalization import normalize_payload
-from provenance_agent.tools import expand_tool_exports, inspect_vulnerabilities
+from provenance_agent.tools import (
+    expand_tool_exports,
+    interpret_vulnerability_assessment,
+)
 
 
 def test_json_command_runner_never_uses_a_shell(monkeypatch):
@@ -38,6 +48,34 @@ def test_json_command_runner_never_uses_a_shell(monkeypatch):
     assert captured["argv"] == ["adapter", "--format", "json"]
     assert "shell" not in captured["kwargs"]
     assert trace.response_sha256
+
+
+def test_http_client_reports_the_package_version(monkeypatch):
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return None
+
+        def read(self, _):
+            return b"{}"
+
+    def fake_urlopen(request, *, timeout):
+        assert request.get_header("User-agent") == (
+            f"provenance-risk-agent/{__version__}"
+        )
+        assert timeout == 5
+        return Response()
+
+    monkeypatch.setattr("provenance_agent.live.urlopen", fake_urlopen)
+    payload, digest = HttpJsonClient(
+        timeout_seconds=5,
+        max_output_bytes=1024,
+    ).request("https://api.osv.dev/v1/query", payload={"package": {}})
+
+    assert payload == {}
+    assert digest
 
 
 def test_live_acquisition_uses_inferred_official_feed_and_normalizes_osv(
@@ -118,7 +156,7 @@ def test_live_acquisition_uses_inferred_official_feed_and_normalizes_osv(
     assert advisory["advisories"][0]["severity"] == "high"
 
     advisory_export = expand_tool_exports(export)[3]
-    evidence = inspect_vulnerabilities.invoke(
+    evidence = interpret_vulnerability_assessment.invoke(
         {"export_json": json.dumps(advisory_export)}
     )
     assert len(evidence) == 1

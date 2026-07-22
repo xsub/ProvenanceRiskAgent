@@ -1688,9 +1688,9 @@
       <div class="problem-grid">
         <div class="terminal mono" aria-label="Examples of complex command-line calls">
           <div class="terminal__bar"><span></span><span></span><span></span></div>
-          <p><span class="prompt">$</span> albs-graph trust <span class="flag">--build-id</span> <span class="value">17812</span><br><span class="flag">--package</span> nginx-core <span class="flag">--arch</span> x86_64</p>
-          <p><span class="prompt">$</span> edgp rpm-albs-provenance<br><span class="flag">--build-id</span> <span class="value">17812</span> <span class="flag">--rpm-limit</span> <span class="value">200</span></p>
-          <p><span class="prompt">$</span> edgp public-advisory-feed<br><span class="flag">--path</span> osv.json <span class="flag">--ecosystem</span> rpm</p>
+          <p><span class="prompt">$</span> albs-graph trust-path nginx-core<br><span class="flag">--build-id</span> <span class="value">57810</span> <span class="flag">--arch</span> x86_64</p>
+          <p><span class="prompt">$</span> edgp albs-artifact-inventory<br><span class="flag">--build-id</span> <span class="value">57810</span> <span class="flag">--task-limit</span> <span class="value">5000</span></p>
+          <p><span class="prompt">$</span> edgp public-advisory-feed<br><span class="flag">--path</span> osv.json <span class="flag">--ecosystem</span> AlmaLinux:10</p>
           <p class="faded"># join identities, assess gaps, apply rules, preserve the trace...</p>
         </div>
         <div class="operator-shift">
@@ -1714,7 +1714,7 @@
       <div class="officer-flow">
         <div class="officer-flow__step" style="--step-color:var(--blue)">
           <strong>Investigate</strong>
-          <span>Resolves artifact identity and plans a bounded scope.</span>
+          <span>Binds artifact identity to a fixed, bounded evidence plan.</span>
         </div>
         <div class="officer-flow__step" style="--step-color:var(--mint)">
           <strong>Verify</strong>
@@ -1740,10 +1740,10 @@
         <div class="brandline"><span class="brandmark">PR</span> Project dependencies</div>
         <span>Two engines, one investigation</span>
       </div>
-      <h2>Two engines provide evidence. The agent turns it into one decision language.</h2>
+      <h2>Two engines produce domain assessments. The agent reconciles them into one decision language.</h2>
       <div class="landscape">
         <article class="engine" style="--engine-color:var(--blue)">
-          <span class="engine__label">Evidence authority #1</span>
+          <span class="engine__label">Assessment authority #1</span>
           <h3>ALBS Provenance Explorer</h3>
           <p>Where did the artifact come from, and is its trust path complete?</p>
           <ul>
@@ -1767,7 +1767,7 @@
         </article>
         <div class="landscape__arrow" aria-hidden="true">←</div>
         <article class="engine" style="--engine-color:var(--mint)">
-          <span class="engine__label">Evidence authority #2</span>
+          <span class="engine__label">Assessment authority #2</span>
           <h3>EDGP</h3>
           <p>How is the artifact connected to the ecosystem, and what is its impact?</p>
           <ul>
@@ -1778,7 +1778,7 @@
           </ul>
         </article>
       </div>
-      <div class="source-note">MVP input contracts: <span class="mono">albs-provenance-explorer/v1</span>, <span class="mono">edgp.rpm.albs_provenance.v1</span>, <span class="mono">edgp.albs.artifact_inventory.v1</span>, <span class="mono">edgp.graph.snapshot.v1</span>.</div>
+      <div class="source-note">Live and replay contracts: <span class="mono">albs-provenance-explorer/v1</span>, <span class="mono">edgp.rpm.albs_provenance.v1</span>, <span class="mono">edgp.albs.artifact_inventory.v1</span>, <span class="mono">edgp.graph.snapshot.v1</span>, <span class="mono">edgp.public.advisory_feed.v1</span>.</div>
     </section>
 
     <section class="slide" data-number="05 / 13" data-title="ALBS">
@@ -1789,9 +1789,9 @@
       <h2>ALBS asks: “can we prove the path from source to the released RPM?”</h2>
       <div class="chain-layout">
         <div class="chain-intro">
-          <span class="tag accent-blue"><span class="tag__dot"></span> Read-only evidence engine</span>
+          <span class="tag accent-blue"><span class="tag__dot"></span> Read-only assessment engine</span>
           <div class="chain-intro__statement">It builds a provenance graph across ALBS, RPM, SBOM, CAS, signatures, and errata.</div>
-          <p>The agent does not duplicate this logic. It consumes a versioned export and interprets its relations as policy evidence.</p>
+          <p>The agent does not duplicate this logic. It invokes the pinned engine or replays its versioned export, then validates and interprets the assessment.</p>
         </div>
         <div class="trust-chain" aria-label="ALBS trust path">
           <div class="trust-chain__item"><span>01</span><strong>Source package</strong></div>
@@ -1857,7 +1857,7 @@
           <tr>
             <td><strong>Establishes provenance</strong>Source, commit, build task, RPM, signature, CAS, and release.</td>
             <td><strong>Establishes relationships</strong>Dependencies, paths, repositories, advisories, and impact.</td>
-            <td><strong>Runs the investigation</strong>Interprets the question, selects tools, and maintains state.</td>
+            <td><strong>Runs the investigation</strong>Executes the bounded workflow, invokes tools, and maintains state.</td>
           </tr>
           <tr>
             <td><strong>Detects trust-path gaps</strong>Incomplete signature, CAS, build, or release evidence.</td>
@@ -1881,12 +1881,12 @@
       </div>
       <h2>The investigation is a state machine, not a hidden conversation with a model</h2>
       <div class="workflow" aria-label="Agent workflow steps">
-        <div class="workflow__step" style="--step:var(--blue)"><span class="workflow__dot"></span><strong>Load</strong><span>Load and validate the export.</span></div>
+        <div class="workflow__step" style="--step:var(--blue)"><span class="workflow__dot"></span><strong>Acquire</strong><span>Run live adapters or load saved evidence.</span></div>
         <div class="workflow__step" style="--step:var(--cyan)"><span class="workflow__dot"></span><strong>Normalize</strong><span>Unify identity and contracts.</span></div>
         <div class="workflow__step" style="--step:var(--mint)"><span class="workflow__dot"></span><strong>Collect facts</strong><span>Record coverage and verified facts.</span></div>
         <div class="workflow__step" style="--step:var(--yellow)"><span class="workflow__dot"></span><strong>Collect risk evidence</strong><span>Run explicit source checks.</span></div>
-        <div class="workflow__step" style="--step:var(--orange)"><span class="workflow__dot"></span><strong>Apply policy</strong><span>Calculate risk and reliability.</span></div>
-        <div class="workflow__step" style="--step:var(--violet)"><span class="workflow__dot"></span><strong>Route</strong><span>ALLOW, REVIEW, UNKNOWN, or ERROR.</span></div>
+        <div class="workflow__step" style="--step:var(--orange)"><span class="workflow__dot"></span><strong>Assess</strong><span>Risk, completeness, confidence, contradictions, and policy.</span></div>
+        <div class="workflow__step" style="--step:var(--violet)"><span class="workflow__dot"></span><strong>Route</strong><span>Propose ALLOW, REVIEW, or UNKNOWN; failures become ERROR.</span></div>
         <div class="workflow__step" style="--step:var(--coral)"><span class="workflow__dot"></span><strong>Report</strong><span>Verdict, evidence IDs, and trace.</span></div>
       </div>
       <div class="workflow-branch">
@@ -1969,10 +1969,10 @@
       <h2>An optional LLM does not diminish agency. It separates communication from authority.</h2>
       <div class="llm-layout">
         <div class="authority-stack">
-          <div class="authority-layer" style="--layer:var(--blue)"><strong>Source engines</strong><span>Establish facts about builds, provenance, dependencies, and advisories.</span></div>
+          <div class="authority-layer" style="--layer:var(--blue)"><strong>Assessment engines</strong><span>Acquire artifacts and produce domain assessments for provenance, dependencies, and advisories.</span></div>
           <div class="authority-layer" style="--layer:var(--mint)"><strong>Deterministic tools</strong><span>Normalize data and generate explicit evidence records.</span></div>
           <div class="authority-layer" style="--layer:var(--yellow)"><strong>Policy rulebook</strong><span>Calculates risk, completeness, confidence, and decision state.</span></div>
-          <div class="authority-layer" style="--layer:var(--violet)"><strong>LLM · optional</strong><span>Interprets intent and explains already computed results.</span></div>
+          <div class="authority-layer" style="--layer:var(--violet)"><strong>LLM · optional</strong><span>Explains already computed results from cited evidence.</span></div>
         </div>
         <aside class="llm-thesis">
           <span class="llm-thesis__overline">Architecture rule</span>
@@ -1992,8 +1992,8 @@
         <div class="run-command">
           <div class="run-command__label">Run</div>
           <code class="mono">docker compose up --build</code>
-          <p>The UI and REST API start on port 8080. A curated fixture runs the combined ALBS + EDGP investigation.</p>
-          <div class="status-line">SQLite stores events, evidence, and the final result</div>
+          <p>The UI and REST API start on port 8080. Saved replay works offline; live mode invokes pinned ALBS/EDGP plus AlmaLinux errata and OSV.</p>
+          <div class="status-line">50 tests · 10/10 golden cases · versioned policy profiles</div>
         </div>
         <div>
           <div class="stack-list" aria-label="Tech stack MVP">
@@ -2013,22 +2013,22 @@
 
     <section class="slide slide--dark" data-number="13 / 13" data-title="MVP delivered">
       <div class="slide__topline">
-        <div class="brandline"><span class="brandmark">PR</span> Next learning loop</div>
-        <span>Evidence model before infrastructure</span>
+        <div class="brandline"><span class="brandmark">PR</span> Next milestone</div>
+        <span>Production evaluation pack</span>
       </div>
-      <h2>The next goal: prove decision quality across controlled evaluation cases</h2>
+      <h2>The next goal: measure decision quality on governed, real ALBS/EDGP cases</h2>
       <div class="roadmap-layout">
         <div class="roadmap-thesis">
           <span class="tag accent-yellow"><span class="tag__dot"></span> MVP delivered</span>
-          <span class="roadmap-thesis__big">The roadmap is now an executable, validated system.</span>
-          <p>Deepen the evidence model before expanding into distributed infrastructure.</p>
+          <span class="roadmap-thesis__big">Move from deterministic correctness to measured decision quality.</span>
+          <p>Calibrate policy with reviewed evidence before expanding distributed infrastructure.</p>
         </div>
         <div class="roadmap">
-          <div class="roadmap__item" style="--road:var(--blue)"><span class="roadmap__number">01</span><div><strong>Stable evidence IDs + source pointers</strong><span>Every conclusion points to a precise source record.</span></div></div>
-          <div class="roadmap__item" style="--road:var(--mint)"><span class="roadmap__number">02</span><div><strong>Policy / risk / completeness / confidence modules</strong><span>Separate contracts and independently testable rules.</span></div></div>
-          <div class="roadmap__item" style="--road:var(--yellow)"><span class="roadmap__number">03</span><div><strong>Contradiction detection</strong><span>Identity, build, release, and signature conflicts across sources.</span></div></div>
-          <div class="roadmap__item" style="--road:var(--orange)"><span class="roadmap__number">04</span><div><strong>Golden evaluation harness</strong><span>Known gaps, CVEs, malformed data, timeouts, and prompt injection.</span></div></div>
-          <div class="roadmap__item" style="--road:var(--violet)"><span class="roadmap__number">05</span><div><strong>Human interrupt + MCP</strong><span>Controlled review resumption and a stable agent-facing interface.</span></div></div>
+          <div class="roadmap__item" style="--road:var(--blue)"><span class="roadmap__number">01</span><div><strong>Versioned evaluation snapshots</strong><span>Collect 20–50 reproducible, real ALBS/EDGP assessment cases.</span></div></div>
+          <div class="roadmap__item" style="--road:var(--mint)"><span class="roadmap__number">02</span><div><strong>Reviewed expected outcomes</strong><span>Record expected facts, decisions, and missing evidence categories.</span></div></div>
+          <div class="roadmap__item" style="--road:var(--yellow)"><span class="roadmap__number">03</span><div><strong>Error labels and costs</strong><span>Track true positives, false positives, false negatives, and operational cost.</span></div></div>
+          <div class="roadmap__item" style="--road:var(--orange)"><span class="roadmap__number">04</span><div><strong>Profile regression reports</strong><span>Compare policy versions and detect decision-quality regressions.</span></div></div>
+          <div class="roadmap__item" style="--road:var(--violet)"><span class="roadmap__number">05</span><div><strong>Production trust and operations</strong><span>Signed feeds, telemetry, then database or workers only when measured.</span></div></div>
         </div>
       </div>
     </section>

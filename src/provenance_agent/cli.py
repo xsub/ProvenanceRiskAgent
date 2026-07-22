@@ -1,3 +1,9 @@
+"""Typer command-line interface for the provenance risk agent.
+
+Provides saved and live analysis, policy inspection and calibration, golden
+evaluation, API serving, MCP serving, and result rendering commands.
+"""
+
 from __future__ import annotations
 
 import json

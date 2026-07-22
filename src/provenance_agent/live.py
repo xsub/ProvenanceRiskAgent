@@ -1,3 +1,9 @@
+"""Controlled live acquisition from ALBS, EDGP, errata, OSV, and SBOM inputs.
+
+Defines bounded command and HTTP adapters, the acquisition coordinator, typed
+failure handling, endpoint controls, schema checks, and semantic validators.
+"""
+
 from __future__ import annotations
 
 import hashlib
@@ -13,6 +19,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+from . import __version__
 from .contracts import AdapterTrace, LiveArtifactRequest, utc_now
 from .execution import RetryExhaustedError, RetryPolicy, run_with_retry
 from .normalization import (
@@ -103,7 +110,7 @@ class HttpJsonClient:
         body = None
         headers = {
             "Accept": "application/json",
-            "User-Agent": "provenance-risk-agent/0.2",
+            "User-Agent": f"provenance-risk-agent/{__version__}",
         }
         if payload is not None:
             body = json.dumps(payload, separators=(",", ":")).encode("utf-8")

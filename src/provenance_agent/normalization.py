@@ -1,3 +1,9 @@
+"""Normalization boundary for supported ALBS, EDGP, and fixture schemas.
+
+Detects source contracts, validates combined assessments, selects target
+artifacts, and emits the stable internal representation used by the workflow.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path

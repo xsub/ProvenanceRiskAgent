@@ -1,3 +1,9 @@
+"""Stable evidence identity and source-attribution helpers.
+
+Enriches facts and findings with deterministic identifiers, normalized subject
+coordinates, source systems, source pointers, and contradiction IDs.
+"""
+
 from __future__ import annotations
 
 import hashlib

@@ -1,3 +1,9 @@
+"""Evidence-completeness assessment for normalized investigations.
+
+Collects source coverage and evaluates provenance, signature, SBOM, advisory,
+freshness, and relationship requirements into a completeness score.
+"""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

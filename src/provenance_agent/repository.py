@@ -1,3 +1,9 @@
+"""Saved-assessment repository boundary.
+
+Loads JSON exports from disk and passes them through the same normalization
+contract used by live investigations.
+"""
+
 from __future__ import annotations
 
 import json

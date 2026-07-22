@@ -1,3 +1,9 @@
+"""API contract tests for investigation and review endpoints.
+
+Covers traceable evaluation, lookup and error responses, persisted review,
+invalid input, and live-source adapter trace delivery.
+"""
+
 from fastapi.testclient import TestClient
 
 from provenance_agent.api import create_app

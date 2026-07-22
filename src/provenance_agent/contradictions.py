@@ -1,3 +1,9 @@
+"""Cross-source contradiction detection for normalized assessments.
+
+Defines normalized claims and reducers that compare ALBS and EDGP artifact
+identity, version, architecture, and digest assertions with source pointers.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

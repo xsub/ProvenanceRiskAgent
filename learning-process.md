@@ -103,7 +103,7 @@ The implemented slice now contains:
   investigations, events, evidence, findings, and review resumption.
 - A minimal web UI that displays policy, missing evidence, contradictions,
   stable IDs, trace, and human-review controls.
-- Ten MCP tools over the same deterministic graph used by REST and CLI.
+- Eleven MCP tools over the same deterministic graph used by REST and CLI.
 - A ten-case offline golden evaluation suite.
 - Dockerfile and Docker Compose packaging.
 - Tests for CLI, workflow, service persistence, checkpoints, API, MCP, retry
@@ -113,13 +113,13 @@ The implemented slice now contains:
 The primary bundled example is `examples/albs-edgp-risk-case.json`. It is a
 small combined fixture that contains ALBS provenance evidence and EDGP
 installed-RPM to ALBS artifact matching evidence in one input. This keeps the
-MVP self-contained while preserving the future adapter boundary: later, the
-same combined result can be assembled from live ALBS/EDGP CLI, HTTP, SQLite, or
-library adapters.
+MVP self-contained and provides deterministic replay alongside the implemented
+live path, which assembles the same normalized result through bounded ALBS,
+EDGP, errata, OSV, and SBOM adapters.
 
 This is a complete local MVP, not a production service. It provides the
-backbone for future live adapters without losing the core rule: every material
-conclusion must be traceable to evidence.
+backbone for deeper production evaluation without losing the core rule: every
+material conclusion must be traceable to evidence.
 
 ## 6. Reliability Model
 
@@ -297,7 +297,7 @@ smoke testing remains a separate local gate because rebuilding the complete
 image on every matrix leg would duplicate cost without adding independent
 evidence about the deterministic core.
 
-The local validation run on 2026-07-22 produced 34 passing pytest cases, a
+The local validation run on 2026-07-22 produced 50 passing pytest cases, a
 clean Ruff result, and 10/10 passing golden scenarios. Pytest also exposed one
 non-fatal deprecation warning at the Starlette/httpx TestClient boundary. It is
 recorded rather than suppressed so a future dependency upgrade can remove it
@@ -350,6 +350,15 @@ profile supplies weights, score bands, completeness requirements, and decision
 thresholds. The compatibility profile preserves the MVP scores, while a strict
 profile can raise review sensitivity without changing evidence extraction.
 
+This boundary also changes the correct vocabulary for agent tools. ALBS and
+EDGP are not passive databases: they acquire artifacts, apply domain logic, and
+produce assessments. The agent therefore does not claim to rediscover those
+facts. Its tools `validate` assessment contracts and coverage, `interpret`
+domain findings, `derive` bounded cross-source findings, and `evaluate` policy.
+This naming records ownership in the interface and helps prevent a subtle
+methodological error: treating correlated upstream opinions as independent
+facts and counting the same evidence more than once.
+
 ## 18. Validation of the Live Boundary
 
 The live boundary adds three distinct validation layers. First, command
@@ -382,7 +391,7 @@ they are governance invariants. Production calibration still needs reviewed
 real-world labels and an explicit cost model for false positives and false
 negatives.
 
-Local verification on 2026-07-22 produced a clean Ruff result, 47 passing
+Local verification on 2026-07-22 produced a clean Ruff result, 50 passing
 pytest cases, 10/10 passing golden cases, and a passing two-profile calibration
 report. The mocked adapter tests exercise command safety, schema validation,
 SBOM hashing/linkage, official errata URL selection, OSV normalization,

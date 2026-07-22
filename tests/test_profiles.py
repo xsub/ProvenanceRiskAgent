@@ -1,3 +1,9 @@
+"""Tests for versioned policy profiles and calibration invariants.
+
+Verifies profile identity and sensitivity along with baseline compatibility and
+default-versus-strict monotonicity over the golden corpus.
+"""
+
 from provenance_agent.calibration import calibrate_policy_profiles
 from provenance_agent.profiles import list_policy_profiles, load_policy_profile
 

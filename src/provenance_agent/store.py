@@ -1,3 +1,9 @@
+"""SQLite persistence for investigation lifecycle data.
+
+Stores requests, summaries, events, adapter traces, review state, and complete
+results while providing typed reconstruction and transactional updates.
+"""
+
 from __future__ import annotations
 
 import json

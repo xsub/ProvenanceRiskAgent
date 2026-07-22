@@ -1,3 +1,9 @@
+"""Policy-profile calibration against deterministic evaluation cases.
+
+Compares versioned profiles over the golden corpus and reports baseline
+compatibility, risk monotonicity, and decision-sensitivity violations.
+"""
+
 from __future__ import annotations
 
 import json

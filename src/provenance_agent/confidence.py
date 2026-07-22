@@ -1,3 +1,9 @@
+"""Confidence assessment for deterministic investigation results.
+
+Combines evidence completeness and contradiction severity while keeping
+confidence independent from risk magnitude and policy outcome.
+"""
+
 from __future__ import annotations
 
 from .contracts import (

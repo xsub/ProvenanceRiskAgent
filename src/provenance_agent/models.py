@@ -1,3 +1,9 @@
+"""Internal domain models and LangGraph workflow state.
+
+Defines compact Pydantic structures for fixture inputs and evidence plus the
+typed state shared by investigation graph nodes.
+"""
+
 from __future__ import annotations
 
 from typing import Any, Literal, TypedDict

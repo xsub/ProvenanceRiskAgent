@@ -1,3 +1,9 @@
+"""Deterministic weighted-risk aggregation.
+
+Maps evidence findings through a selected versioned policy profile and returns
+capped scores, calibrated levels, and the contributing evidence identifiers.
+"""
+
 from __future__ import annotations
 
 from typing import Any

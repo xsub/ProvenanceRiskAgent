@@ -1,3 +1,9 @@
+"""Normalized MCP interface over deterministic investigation capabilities.
+
+Exposes artifact identity, upstream assessments, dependency impact, policy,
+risk, live evaluation, and grounded explanation through one FastMCP server.
+"""
+
 from __future__ import annotations
 
 from collections import deque
@@ -16,9 +22,10 @@ from .workflow import build_graph
 mcp = FastMCP(
     "Enterprise Linux Provenance Risk Agent",
     instructions=(
-        "Use these tools to investigate supplied ALBS and EDGP JSON exports. "
-        "Risk, completeness, confidence, policy, and decision fields are "
-        "deterministic; explanations may only summarize cited evidence."
+        "Use these tools to reconcile ALBS and EDGP assessment outputs or "
+        "investigate a live ALBS build. Risk, completeness, confidence, policy, "
+        "and proposed decisions are deterministic; explanations may only "
+        "summarize cited evidence."
     ),
 )
 
@@ -35,8 +42,8 @@ def resolve_artifact_identity(input_path: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-def inspect_build_provenance(input_path: str) -> dict[str, Any]:
-    """Return build and provenance facts with stable evidence identifiers."""
+def get_build_provenance_assessment(input_path: str) -> dict[str, Any]:
+    """Return normalized ALBS/EDGP build-provenance assessment records."""
     result = _analyze(input_path)
     records = [
         item
@@ -48,8 +55,8 @@ def inspect_build_provenance(input_path: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-def verify_signature_or_integrity(input_path: str) -> dict[str, Any]:
-    """Return signature and CAS/integrity findings from deterministic checks."""
+def get_signature_integrity_assessment(input_path: str) -> dict[str, Any]:
+    """Return normalized signature and integrity assessment records."""
     result = _analyze(input_path)
     records = [
         item
@@ -60,8 +67,8 @@ def verify_signature_or_integrity(input_path: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-def query_dependencies(input_path: str) -> dict[str, Any]:
-    """Return direct dependency node identifiers from an EDGP graph snapshot."""
+def get_direct_dependencies(input_path: str) -> dict[str, Any]:
+    """Return direct dependencies reported by an EDGP graph assessment."""
     graph = _edgp_graph(input_path)
     root = str(graph.get("root") or "")
     dependencies = sorted(
@@ -75,8 +82,8 @@ def query_dependencies(input_path: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-def query_reverse_dependencies(input_path: str) -> dict[str, Any]:
-    """Return direct reverse dependency node identifiers for an EDGP root."""
+def get_reverse_dependencies(input_path: str) -> dict[str, Any]:
+    """Return reverse dependencies reported by an EDGP graph assessment."""
     graph = _edgp_graph(input_path)
     root = str(graph.get("root") or "")
     dependents = sorted(
@@ -124,8 +131,8 @@ def calculate_blast_radius(input_path: str, limit: int = 10_000) -> dict[str, An
 
 
 @mcp.tool()
-def retrieve_vulnerabilities(input_path: str) -> dict[str, Any]:
-    """Return deterministic vulnerability evidence without model-generated facts."""
+def get_vulnerability_assessment(input_path: str) -> dict[str, Any]:
+    """Return normalized vulnerability assessment records without model claims."""
     result = _analyze(input_path)
     records = [
         item

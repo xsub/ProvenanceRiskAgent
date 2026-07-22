@@ -1,3 +1,9 @@
+"""Unit tests for bounded retry execution primitives.
+
+Verifies policy validation, exponential delay bounds, complete attempt traces,
+root-cause preservation, and immediate handling of non-transient failures.
+"""
+
 import pytest
 
 from provenance_agent.execution import (

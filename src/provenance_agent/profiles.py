@@ -1,3 +1,9 @@
+"""Versioned policy-profile models and package-resource loading.
+
+Defines validated risk bands, decision thresholds, blast-radius calibration,
+profile invariants, cached lookup, and profile enumeration.
+"""
+
 from __future__ import annotations
 
 from functools import lru_cache

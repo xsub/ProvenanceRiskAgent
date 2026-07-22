@@ -1,3 +1,9 @@
+"""Application-service integration tests with persistent state.
+
+Covers investigation traces, clean and combined assessments, human review,
+transient retry recording, and requested policy-profile application.
+"""
+
 from provenance_agent.contracts import InvestigationRequest, ReviewDecision
 from provenance_agent.service import InvestigationService
 from provenance_agent.store import InvestigationStore

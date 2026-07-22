@@ -1,3 +1,9 @@
+"""Typed contracts shared by API, workflow, persistence, and adapters.
+
+Defines Pydantic structures for requests, live acquisition, evidence, risk,
+coverage, confidence, contradictions, policy, review, events, and results.
+"""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

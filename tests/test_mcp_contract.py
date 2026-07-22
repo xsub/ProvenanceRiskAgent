@@ -1,9 +1,33 @@
+"""Contract tests for LangChain and MCP tool surfaces.
+
+Locks assessment-aware tool names, verifies the exposed MCP capability set,
+and checks REST parity plus bounded dependency-impact reporting.
+"""
+
 import asyncio
 
 from fastapi.testclient import TestClient
 
 from provenance_agent.api import create_app
 from provenance_agent.mcp_server import mcp
+from provenance_agent.tools import EVIDENCE_TOOLS, OBSERVATION_TOOLS
+
+
+def test_langchain_tools_name_their_assessment_boundary():
+    assert {item.name for item in EVIDENCE_TOOLS} == {
+        "evaluate_builder_policy",
+        "validate_signature_evidence",
+        "evaluate_reproducibility_policy",
+        "interpret_vulnerability_assessment",
+        "validate_albs_provenance_assessment",
+        "validate_edgp_provenance_assessment",
+        "validate_edgp_inventory_assessment",
+        "validate_edgp_graph_assessment",
+        "derive_edgp_blast_radius_finding",
+    }
+    assert {item.name for item in OBSERVATION_TOOLS} == {
+        "summarize_assessment_coverage"
+    }
 
 
 def test_mcp_exposes_planned_normalized_capabilities():
@@ -12,12 +36,12 @@ def test_mcp_exposes_planned_normalized_capabilities():
 
     assert names == {
         "resolve_artifact_identity",
-        "inspect_build_provenance",
-        "verify_signature_or_integrity",
-        "query_dependencies",
-        "query_reverse_dependencies",
+        "get_build_provenance_assessment",
+        "get_signature_integrity_assessment",
+        "get_direct_dependencies",
+        "get_reverse_dependencies",
         "calculate_blast_radius",
-        "retrieve_vulnerabilities",
+        "get_vulnerability_assessment",
         "evaluate_policy",
         "evaluate_artifact_risk",
         "evaluate_live_artifact",
