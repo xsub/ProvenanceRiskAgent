@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from provenance_agent.api import create_app
+from provenance_agent.repository import load_export
 
 
 def test_api_evaluate_returns_traceable_result(tmp_path):
@@ -140,3 +141,48 @@ def test_api_records_invalid_input_as_error_without_retry(tmp_path):
     event_types = [event["event_type"] for event in payload["events"]]
     assert "investigation_failed" in event_types
     assert "execution_attempt_failed" not in event_types
+
+
+def test_api_accepts_live_source_and_records_adapter_trace(tmp_path, monkeypatch):
+    from provenance_agent import workflow
+
+    class FakeAcquirer:
+        def acquire(self, request, *, advisory_max_age_seconds):
+            export = load_export("examples/clean-build.json")
+            export["source_path"] = f"live://albs/build/{request.build_id}"
+            export["acquisition"] = [
+                {
+                    "adapter": "fake-live",
+                    "operation": "acquire",
+                    "source_uri": "https://build.almalinux.org",
+                    "status": "succeeded",
+                    "duration_ms": 1,
+                }
+            ]
+            return export
+
+    monkeypatch.setattr(
+        workflow.LiveAcquirer,
+        "from_environment",
+        classmethod(lambda cls: FakeAcquirer()),
+    )
+    client = TestClient(create_app(db_path=tmp_path / "live.sqlite3"))
+
+    response = client.post(
+        "/api/v1/evaluate",
+        json={
+            "live": {"build_id": 42, "osv_ecosystem": "AlmaLinux:9"},
+            "policy_profile": "enterprise-linux-strict@1.0.0",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["input_path"] == "live://albs/build/42"
+    assert payload["policy_evaluation"]["profile"] == (
+        "enterprise-linux-strict@1.0.0"
+    )
+    assert payload["acquisition"][0]["adapter"] == "fake-live"
+    assert "live_sources_acquired" in {
+        event["event_type"] for event in payload["events"]
+    }

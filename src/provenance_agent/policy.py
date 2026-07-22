@@ -7,6 +7,7 @@ from .contracts import (
     PolicyRuleResult,
     RiskAssessment,
 )
+from .profiles import PolicyProfile, load_policy_profile
 
 
 def evaluate_policy(
@@ -14,8 +15,9 @@ def evaluate_policy(
     risk: RiskAssessment,
     completeness: CompletenessAssessment,
     contradictions: list[Contradiction],
-    profile: str = "default",
+    profile: PolicyProfile | None = None,
 ) -> PolicyEvaluation:
+    profile = profile or load_policy_profile()
     evidence_complete = not completeness.missing_categories
     rules = [
         PolicyRuleResult(
@@ -39,17 +41,21 @@ def evaluate_policy(
         ),
         PolicyRuleResult(
             rule_id="risk-review-threshold",
-            status="fail" if risk.score >= 50 else "pass",
+            status=(
+                "fail"
+                if risk.score >= profile.decision.policy_review_risk_score
+                else "pass"
+            ),
             message=(
                 "Risk score requires review."
-                if risk.score >= 50
+                if risk.score >= profile.decision.policy_review_risk_score
                 else "Risk score is below the review threshold."
             ),
             evidence_ids=risk.evidence_ids,
         ),
     ]
     return PolicyEvaluation(
-        profile=profile,
+        profile=profile.identifier,
         rule_results=rules,
         failed_rule_ids=[rule.rule_id for rule in rules if rule.status == "fail"],
     )

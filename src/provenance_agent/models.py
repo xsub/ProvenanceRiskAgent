@@ -53,6 +53,8 @@ class Evidence(BaseModel):
     weight: int
     source: str
     source_pointer: dict[str, Any] = Field(default_factory=dict)
+    severity: Severity | Literal["unknown"] | None = None
+    attributes: dict[str, Any] = Field(default_factory=dict)
 
 
 class Observation(BaseModel):
@@ -65,6 +67,10 @@ class Observation(BaseModel):
 
 class AnalysisState(TypedDict, total=False):
     input_path: str
+    live: dict
+    policy_profile_id: str
+    policy_profile: dict
+    acquisition: list[dict]
     export: dict
     observations: list[dict]
     evidence: list[dict]

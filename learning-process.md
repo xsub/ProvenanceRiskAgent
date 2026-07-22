@@ -259,11 +259,12 @@ suite, real local ALBS PIW fixture generation, EDGP schema validation, agent
 execution over both source projects, container build and internal API smoke
 tests, and responsive browser checks.
 
-The remaining uncertainty is production-shaped: live feed freshness,
-authoritative advisory coverage, concurrent users, process-level recovery, and
-governed real-world evaluation data. These are the conditions that may justify
-PostgreSQL, telemetry, Redis, or a distributed queue. Infrastructure should
-enter only with a measurable failure mode and an acceptance test.
+The remaining uncertainty is production-shaped: upstream feed availability and
+coverage quality, concurrent users, process-level recovery, stronger source
+authenticity, and governed real-world evaluation data. These are the conditions
+that may justify PostgreSQL, telemetry, Redis, signed snapshots, or a
+distributed queue. Infrastructure should enter only with a measurable failure
+mode and an acceptance test.
 
 The academic habit to preserve is simple: every new component should answer
 which uncertainty it reduces, which failure mode it handles, and how it keeps
@@ -314,3 +315,101 @@ for commit `735cf27`, completed successfully on 2026-07-22. All three Python
 jobs passed installation, Ruff, pytest, and the deterministic golden
 evaluation. This converts the compatibility statement from a local assumption
 into evidence produced by the hosted Linux runner matrix.
+
+## 17. From Export Analysis to Live Acquisition
+
+The post-MVP acquisition boundary starts from capabilities already owned by the
+source engines. A live investigation accepts an ALBS build identifier and an
+optional package, architecture, and build SBOM. The ALBS adapter invokes the
+focused `albs-graph trust-path` command. EDGP runs in a separate process through
+a narrow bridge over `AlbsBuildAdapter`, `build_albs_artifact_inventory`, and
+`build_public_advisory_feed_report`. Their JSON output remains an internal typed
+contract, but the user no longer has to prepare or join export files.
+
+Security context uses two complementary distribution-aware checks. The ALBS
+path consumes a validated snapshot of the official AlmaLinux full errata feed
+and preserves its three-state result: exact NEVRA present in an advisory,
+snapshot consulted without an exact match, or not checked. The agent downloads
+that snapshot itself, validates its advisory/package coordinates, records its
+SHA-256 digest, and gives ALBS the same temporary file. A separate OSV query
+checks the exact AlmaLinux package version and EDGP normalizes the returned
+advisory records. Absence of an exact NEVRA in errata is not allowed to erase
+OSV findings. A network or parser failure remains incomplete coverage; only a
+successful zero-result OSV query is evidence of a clean vulnerability lookup.
+
+The SBOM is validated before it crosses the process boundary. The live ALBS
+adapter accepts CycloneDX JSON with a non-empty component inventory, records
+its SHA-256 digest, and then requires the ALBS graph to contain a matching SBOM
+node and `described_by` relation. Syntax alone is therefore not treated as
+coverage. SPDX is not advertised here because the upstream ALBS build-SBOM
+adapter currently consumes CycloneDX.
+
+Risk calibration moves out of tool implementations into immutable, versioned
+policy profiles. Evidence tools identify findings and severity; a selected
+profile supplies weights, score bands, completeness requirements, and decision
+thresholds. The compatibility profile preserves the MVP scores, while a strict
+profile can raise review sensitivity without changing evidence extraction.
+
+## 18. Validation of the Live Boundary
+
+The live boundary adds three distinct validation layers. First, command
+construction is tested as an argument vector and never enters a shell. Second,
+adapter outputs must match the exact ALBS and EDGP schemas before
+normalization. Third, semantic checks decide whether the evidence proves the
+claimed coverage: exact artifact identity and freshness for OSV, linked SBOM
+evidence for ALBS, and advisory-present or confirmed-clean state for errata.
+
+The OSV error path deserves special attention. Its retry loop may exhaust while
+ALBS and EDGP remain available. The workflow preserves the successful
+provenance evidence and adds a failed acquisition trace, but leaves
+`vulnerability_coverage` and `advisory_freshness` missing. This is a better
+degradation mode than failing the whole investigation, and much safer than
+turning transport failure into an empty vulnerability set.
+
+Endpoint validation is also part of the trust boundary. Requiring HTTPS protects
+transport but does not prevent a REST or MCP caller from directing the service
+to an arbitrary internal host. The live request therefore allowlists official
+ALBS, AlmaLinux errata, and OSV hosts. Operators can add private mirrors only
+through an explicit environment configuration, keeping deployment policy out
+of untrusted request bodies.
+
+Two immutable policy profiles are now executable configuration. The default
+profile reproduces all ten golden expectations. The strict profile raises
+selected finding weights and review thresholds. `calibrate-policy` checks that
+strict risk never falls below default risk and that strict cannot return
+`ALLOW` where default does not. These checks are not statistical calibration:
+they are governance invariants. Production calibration still needs reviewed
+real-world labels and an explicit cost model for false positives and false
+negatives.
+
+Local verification on 2026-07-22 produced a clean Ruff result, 47 passing
+pytest cases, 10/10 passing golden cases, and a passing two-profile calibration
+report. The mocked adapter tests exercise command safety, schema validation,
+SBOM hashing/linkage, official errata URL selection, OSV normalization,
+freshness, truncation semantics, and failure degradation.
+
+The first containerized live run exposed three integration defects that fixture
+tests did not reveal. The pinned EDGP package publishes an entry point that
+imports a module absent from its wheel, so the application now uses a narrow
+process bridge over the installed EDGP library API. EDGP advisory
+normalization expands one advisory across affected package rows, so risk
+evidence is deduplicated by advisory ID and exact package before scoring.
+Finally, EDGP limits build tasks independently from artifacts; increasing only
+the artifact limit omitted the selected `x86_64` task and caused an apparent
+cross-architecture contradiction. Both limits are now explicit and bounded,
+and the normalized inventory is scoped to the ALBS-selected name,
+version-release, and architecture.
+
+After those corrections, a real containerized investigation of ALBS build
+57810 and `nginx-core-1.26.3-6.el10_2.3.x86_64` completed successfully using
+the live ALBS API, the official AlmaLinux 10 errata feed, OSV, EDGP, and a
+457-component CycloneDX SBOM. The artifact and SBOM agreed on SHA-256
+`300eb6e84d90e76cd26041ae3e3dee83f7d735b3e30d9dd2719dc8b71ad04fef`.
+The validated errata snapshot contained 315 advisories and had SHA-256
+`93e2436d132896bd80138310c3e9827225db5fb5fd78ec8554d172b7e6ce28b6`.
+OSV returned three unique advisory records, no cross-source contradiction
+remained, and all seven acquisition stages succeeded. The deterministic result
+was `REVIEW`, risk 24/100, completeness 100/100, and confidence 100/100. This
+is the intended separation between evidence completeness and artifact safety:
+the investigation can be complete while its collected evidence still requires
+review.

@@ -11,11 +11,11 @@ The project has evolved from a compact LangChain/LangGraph learning harness
 into a runnable local application with a web UI, REST API, MCP interface, typed
 evidence contracts, deterministic policy evaluation, and grounded explanations.
 
-The agent consumes evidence from ALBS Provenance Explorer and Enterprise
-Dependency Graph Pipeline (EDGP), gathers deterministic provenance and graph
-evidence, calculates deterministic risk and policy outputs, and uses an LLM
-only for optional explanation. The LLM never invents or modifies package facts,
-evidence records, risk scores, completeness, confidence, or decisions.
+The agent acquires live evidence from ALBS Provenance Explorer, Enterprise
+Dependency Graph Pipeline (EDGP), the official AlmaLinux errata feed, and OSV.
+It also accepts saved exports for reproducible analysis. Deterministic code
+calculates evidence, risk, completeness, confidence, policy, and decisions; an
+LLM is used only for optional explanation and cannot modify those results.
 
 ## Vision, Scope, and Goal
 
@@ -125,12 +125,14 @@ flowchart TB
     direction LR
     albs_engine["ALBS Provenance Explorer<br/>build, lineage, CAS, signatures"]:::source;
     edgp_engine["EDGP<br/>dependencies, advisories, impact"]:::source;
+    advisory_feeds["AlmaLinux errata + OSV<br/>distribution and CVE evidence"]:::source;
   end
 
   subgraph decisioning["Decision pipeline"]
     direction TB
     evidence_records["Normalized evidence records"]:::evidence;
     consistency["Missing evidence<br/>and contradictions"]:::policy;
+    profiles["Versioned policy profiles<br/>weights and thresholds"]:::policy;
     policy_engine["Deterministic policy<br/>and risk"]:::policy;
     assessment["Completeness and confidence"]:::policy;
     review["Human review<br/>when required"]:::result;
@@ -149,9 +151,12 @@ flowchart TB
   workflow <--> checkpoints;
   adapter_tools --> albs_engine;
   adapter_tools --> edgp_engine;
+  adapter_tools --> advisory_feeds;
   albs_engine --> evidence_records;
   edgp_engine --> evidence_records;
+  advisory_feeds --> evidence_records;
   evidence_records --> consistency;
+  profiles --> policy_engine;
   consistency --> policy_engine;
   policy_engine --> assessment;
   assessment --> review;
@@ -184,7 +189,7 @@ investigations, and explain already-computed evidence.
 ```mermaid
 flowchart TD
   request(["Investigation request"]):::start;
-  load["Load and normalize export"]:::io;
+  load["Acquire live evidence or<br/>load and normalize export"]:::io;
   facts["Collect verified facts<br/>coverage observations"]:::deterministic;
   evidence["Collect risk evidence<br/>policy-relevant findings"]:::deterministic;
   consistency["Detect missing and<br/>contradictory evidence"]:::deterministic;
@@ -249,24 +254,40 @@ proposed verdict separately from the human decision.
    Expose normalized investigation capabilities through MCP and add golden
    cases for missing signatures, unknown builders, vulnerabilities, incomplete
    provenance, contradictions, timeouts, malformed data, and prompt injection.
+8. **Production-shaped acquisition and policy governance - complete**
+   Invoke pinned ALBS/EDGP adapters, enrich exact package versions from OSV,
+   validate CycloneDX linkage and errata coverage, and calibrate immutable
+   versioned policy profiles against the golden dataset.
 
 The MVP roadmap is implemented. The application includes typed contracts,
 stable evidence IDs, source pointers, explicit decision modules, cross-source
 contradiction detection, bounded retries, a FastAPI service, web UI, SQLite
-event log and LangGraph checkpoints, Docker Compose packaging, ten MCP tools,
-and a ten-case offline golden evaluation suite.
+event log and LangGraph checkpoints, Docker Compose packaging, eleven MCP
+tools, and a ten-case offline golden evaluation suite.
 
 ## Current Implementation State
 
-The repository currently contains a complete local MVP:
+The repository currently contains a complete local MVP plus its live
+acquisition extension:
 
-- file-based adapters normalize four real ALBS/EDGP export contracts plus the
-  combined and compatibility fixture formats;
+- live adapters invoke pinned ALBS Provenance Explorer and narrow EDGP library
+  bridge processes without a shell and normalize their JSON contracts;
+- the OSV API supplies exact package/version advisory records that EDGP
+  normalizes, while ALBS checks a validated and SHA-256-recorded snapshot of
+  the official AlmaLinux errata feed;
+- CycloneDX SBOM input is size/schema/inventory checked, SHA-256 recorded, and
+  accepted as coverage only when ALBS links it with `described_by`;
+- saved-input adapters normalize ALBS/EDGP/advisory contracts plus the combined
+  and compatibility fixture formats;
+- immutable `enterprise-linux-default@1.0.0` and
+  `enterprise-linux-strict@1.0.0` profiles own risk weights and thresholds;
+- `calibrate-policy` proves the default 10/10 baseline and strict-profile
+  monotonicity on the golden dataset;
 - deterministic modules own evidence identity, contradictions, risk,
   completeness, confidence, policy, and decision routing;
 - LangGraph runs the investigation and persists optional human-review
   interrupt/resume checkpoints in SQLite;
-- CLI, REST, web UI, and ten MCP tools share the same analytical workflow;
+- CLI, REST, web UI, and eleven MCP tools share the same analytical workflow;
 - transient adapter failures use three bounded in-process attempts with
   persisted attempt events, while invalid input is not retried;
 - pytest covers deterministic modules, workflow, persistence, API, CLI, MCP,
@@ -275,10 +296,9 @@ The repository currently contains a complete local MVP:
   3.12, and 3.13, with third-party action revisions pinned to immutable commit
   SHAs.
 
-The current boundary is equally important: source acquisition is still based
-on JSON exports, execution is single-process, persistence is SQLite, and LLM
-narration is optional. Live ALBS/EDGP adapters, authoritative advisory feeds,
-multi-user concurrency, telemetry, and distributed workers are post-MVP work.
+Execution remains single-process, persistence remains SQLite, and LLM narration
+remains optional. Multi-user concurrency, telemetry, durable process-level job
+recovery, and production-governed calibration data remain post-MVP work.
 
 Local quality gates:
 
@@ -287,11 +307,15 @@ pip install -e '.[dev]'
 ruff check .
 pytest -q
 provenance-agent evaluate-golden
+provenance-agent calibrate-policy
 ```
 
-Latest local validation on 2026-07-22: Ruff passed, pytest reported 34 passed,
-and all 10 golden cases passed. Pytest reports one upstream Starlette/httpx
-deprecation warning; it does not affect the deterministic results.
+Latest local validation on 2026-07-22: Ruff passed, pytest reported 47 passed,
+all 10 golden cases passed, and policy calibration passed. A containerized live
+run for ALBS build 57810 also completed through ALBS, EDGP, AlmaLinux errata,
+OSV, and CycloneDX linkage with no contradictory evidence. Pytest reports one
+upstream Starlette/httpx deprecation warning; it does not affect deterministic
+results.
 
 ## Input Contract
 
@@ -301,6 +325,7 @@ The preferred inputs are real exports from the local EDGP and ALBS projects:
 - `edgp.rpm.albs_provenance.v1`
 - `edgp.albs.artifact_inventory.v1`
 - `edgp.graph.snapshot.v1`
+- `edgp.public.advisory_feed.v1`
 
 Completeness is evaluated against the investigation question, not only against
 the fields available in a given source contract. In particular, an ALBS graph
@@ -379,6 +404,35 @@ pip install -e .
 provenance-agent analyze examples/suspicious-build.json
 ```
 
+Run a live investigation against ALBS, EDGP, AlmaLinux errata, and OSV:
+
+```bash
+pip install -e '.[live]'
+provenance-agent analyze-live 57810 \
+  --package nginx-core \
+  --arch x86_64 \
+  --ecosystem AlmaLinux:10 \
+  --policy-profile enterprise-linux-default@1.0.0
+```
+
+Add `--sbom /path/to/build-57810.cyclonedx.json` to require deterministic
+CycloneDX linkage. Omitting it is allowed, but `sbom` and `security_context`
+remain missing rather than being interpreted as clean. `analyze-live` retries
+transient ALBS/EDGP failures three times; an unavailable OSV lookup is recorded
+as incomplete advisory coverage, never as zero vulnerabilities.
+
+The Docker image installs these pinned source-engine revisions:
+
+- ALBS Provenance Explorer `9d33703ae923e03f3c77bd0d27a3c58ae37d638f`;
+- EDGP `4ca0b0042bfe7b91b45b27f0af6054b3847afef6`.
+
+The defaults use the [official AlmaLinux `errata.full.json` feeds](https://wiki.almalinux.org/documentation/errata.html)
+for the detected major release and the [OSV package/version query API](https://google.github.io/osv.dev/api/).
+Both endpoints require HTTPS and can be overridden through the typed live
+request for controlled deployments. Official hosts are allowlisted by default;
+private mirror hostnames must be listed explicitly in the comma-separated
+`PROVENANCE_AGENT_ALLOWED_LIVE_HOSTS` environment variable.
+
 The primary combined MVP case can be run from the CLI too:
 
 ```bash
@@ -403,6 +457,8 @@ Run the offline golden evaluation:
 
 ```bash
 provenance-agent evaluate-golden
+provenance-agent policy-profiles
+provenance-agent calibrate-policy
 ```
 
 The suite covers a valid signed package, missing signature, unknown builder,
@@ -418,7 +474,7 @@ provenance-agent mcp
 
 The MCP surface exposes artifact identity, build provenance,
 signature/integrity, dependencies, reverse dependencies, blast radius,
-vulnerabilities, policy, complete risk evaluation, and grounded explanation.
+vulnerabilities, policy, saved and live risk evaluation, and grounded explanation.
 Streamable HTTP and SSE transports are also available with
 `--transport streamable-http` and `--transport sse`.
 
@@ -458,13 +514,14 @@ depend on one provider.
 
 ## Planned Extension Points
 
-1. Replace the JSON repository with an ALBS/EDGP HTTP or SQLite adapter.
-2. Add authoritative advisory ingestion and richer provenance-path queries.
-3. Move SQLite state to PostgreSQL when concurrent multi-user operation
+1. Move SQLite state to PostgreSQL when concurrent multi-user operation
    requires it.
-4. Add OpenTelemetry traces and operational service-level objectives.
-5. Add distributed workers only for measured long-running or concurrent jobs.
-6. Expand golden cases with production-governed, versioned ALBS/EDGP exports.
+2. Add OpenTelemetry traces and operational service-level objectives.
+3. Add distributed workers only for measured long-running or concurrent jobs.
+4. Expand calibration with production-governed, versioned ALBS/EDGP snapshots
+   and reviewed false-positive/false-negative labels.
+5. Add signed feed snapshots or transparency-log verification where stronger
+   source authenticity is required than HTTPS plus response digests.
 
 Redis, RabbitMQ, and Celery are deliberately not required for the MVP. Redis
 can later support caching, live progress pub/sub, short-lived locks, or rate

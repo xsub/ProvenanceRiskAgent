@@ -5,7 +5,9 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from .contracts import LiveArtifactRequest
 from .normalization import EDGP_GRAPH_SNAPSHOT_SCHEMA
+from .profiles import DEFAULT_POLICY_PROFILE
 from .repository import load_export
 from .tools import expand_tool_exports
 from .workflow import build_graph
@@ -128,7 +130,7 @@ def retrieve_vulnerabilities(input_path: str) -> dict[str, Any]:
     records = [
         item
         for item in result.get("evidence", [])
-        if "VULNERABILITY" in item["code"]
+        if "VULNERABILITY" in item["code"] or "ADVISORY" in item["code"]
     ]
     return {"artifact": result["export"]["artifact"], "records": records}
 
@@ -148,6 +150,32 @@ def evaluate_policy(input_path: str) -> dict[str, Any]:
 def evaluate_artifact_risk(input_path: str) -> dict[str, Any]:
     """Return the complete deterministic risk result used by REST and CLI."""
     return _result_payload(_analyze(input_path))
+
+
+@mcp.tool()
+def evaluate_live_artifact(
+    build_id: int,
+    package: str | None = None,
+    arch: str | None = None,
+    sbom_path: str | None = None,
+    osv_ecosystem: str | None = None,
+    policy_profile: str = DEFAULT_POLICY_PROFILE,
+) -> dict[str, Any]:
+    """Acquire ALBS, EDGP, errata, SBOM, and OSV evidence for a live build."""
+    live = LiveArtifactRequest(
+        build_id=build_id,
+        package=package,
+        arch=arch,
+        sbom_path=sbom_path,
+        osv_ecosystem=osv_ecosystem,
+    )
+    result = build_graph().invoke(
+        {
+            "live": live.model_dump(mode="json"),
+            "policy_profile_id": policy_profile,
+        }
+    )
+    return _result_payload(result)
 
 
 @mcp.tool()
@@ -186,6 +214,8 @@ def _result_payload(result: dict[str, Any]) -> dict[str, Any]:
         "completeness": result["completeness"],
         "confidence": result["confidence"],
         "policy_evaluation": result["policy_evaluation"],
+        "policy_profile": result["policy_profile"],
+        "acquisition": result.get("acquisition", []),
         "contradictions": result.get("contradictions", []),
         "observations": result.get("observations", []),
         "evidence": result.get("evidence", []),

@@ -13,6 +13,7 @@ from .contracts import (
     CompletenessAssessment,
     ConfidenceAssessment,
     Contradiction,
+    LiveArtifactRequest,
     RiskAssessment,
 )
 from .contradictions import detect_contradictions
@@ -20,29 +21,46 @@ from .decision import decide
 from .evidence import enrich_record
 from .explainer import deterministic_explanation, llm_explanation
 from .models import AnalysisState
+from .live import LiveAcquirer
 from .normalization import SIMPLE_SCHEMA
 from .policy import evaluate_policy
+from .profiles import PolicyProfile, load_policy_profile
 from .repository import load_export
 from .risk import assess_risk
 from .tools import EVIDENCE_TOOLS, OBSERVATION_TOOLS, expand_tool_exports
 
 
 def load_node(state: AnalysisState) -> dict[str, Any]:
-    export = load_export(state["input_path"])
-    return {"export": export}
+    profile = load_policy_profile(state.get("policy_profile_id", "enterprise-linux-default@1.0.0"))
+    if state.get("live"):
+        export = LiveAcquirer.from_environment().acquire(
+            LiveArtifactRequest.model_validate(state["live"]),
+            advisory_max_age_seconds=profile.advisory_max_age_seconds,
+        )
+    else:
+        export = load_export(state["input_path"])
+    return {
+        "export": export,
+        "policy_profile": profile.model_dump(mode="json", by_alias=True),
+        "acquisition": export.get("acquisition", []),
+    }
 
 
 def collect_evidence_node(state: AnalysisState) -> dict[str, Any]:
     # LangChain tools are typed boundaries. The graph decides when they run.
     evidence: list[dict[str, Any]] = []
+    profile = PolicyProfile.model_validate(
+        state.get("policy_profile") or load_policy_profile().model_dump(by_alias=True)
+    )
     for tool_export in expand_tool_exports(state["export"]):
         export_json = json.dumps(tool_export)
         for evidence_tool in EVIDENCE_TOOLS:
             result = evidence_tool.invoke({"export_json": export_json})
-            evidence.extend(
-                enrich_record(item, export=tool_export, kind="risk_evidence")
-                for item in result
-            )
+            for item in result:
+                item["weight"] = profile.weight_for(item)
+                evidence.append(
+                    enrich_record(item, export=tool_export, kind="risk_evidence")
+                )
     return {"evidence": evidence}
 
 
@@ -67,7 +85,10 @@ def detect_contradictions_node(state: AnalysisState) -> dict[str, Any]:
 
 
 def risk_node(state: AnalysisState) -> dict[str, Any]:
-    risk = assess_risk(state.get("evidence", []))
+    risk = assess_risk(
+        state.get("evidence", []),
+        PolicyProfile.model_validate(state["policy_profile"]),
+    )
     return {
         "risk": risk.model_dump(mode="json"),
         "risk_score": risk.score,
@@ -97,6 +118,7 @@ def policy_node(state: AnalysisState) -> dict[str, Any]:
         risk=RiskAssessment.model_validate(state["risk"]),
         completeness=CompletenessAssessment.model_validate(state["completeness"]),
         contradictions=_contradictions(state),
+        profile=PolicyProfile.model_validate(state["policy_profile"]),
     )
     return {"policy_evaluation": evaluation.model_dump(mode="json")}
 
@@ -107,6 +129,7 @@ def decision_node(state: AnalysisState) -> dict[str, Any]:
         completeness=CompletenessAssessment.model_validate(state["completeness"]),
         confidence=ConfidenceAssessment.model_validate(state["confidence"]),
         contradictions=_contradictions(state),
+        profile=PolicyProfile.model_validate(state["policy_profile"]),
     )
     return {
         "proposed_decision": proposed,
@@ -160,6 +183,7 @@ def render_node(state: AnalysisState) -> dict[str, Any]:
         f"# Provenance risk report: {artifact['name']}",
         "",
         f"- Source schema: `{state['export']['source_schema']}`",
+        f"- Policy profile: `{PolicyProfile.model_validate(state['policy_profile']).identifier}`",
         f"- Decision: **{state['decision_state']}**",
         f"- Proposed decision: **{state['proposed_decision']}**",
         f"- Risk: **{state['risk_level']}** ({state['risk_score']}/100)",

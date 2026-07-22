@@ -8,7 +8,12 @@ Date: 2026-07-21.
 
 Integration branch: `main`.
 
-## 1. Current-State Assessment
+Post-MVP extension status on 2026-07-22: live ALBS/EDGP process adapters,
+AlmaLinux errata and OSV advisory acquisition, CycloneDX linkage validation,
+and versioned/calibrated policy profiles are implemented. The assessment and
+stage descriptions below intentionally preserve the original planning snapshot.
+
+## 1. Baseline Assessment (2026-07-21)
 
 ### ProvenanceRiskAgent
 

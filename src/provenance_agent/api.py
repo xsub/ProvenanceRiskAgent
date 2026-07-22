@@ -23,7 +23,7 @@ from .store import InvestigationStore
 def create_app(db_path: str | Path | None = None) -> FastAPI:
     app = FastAPI(
         title="Enterprise Linux Provenance Risk Agent",
-        version="0.1.0",
+        version="0.2.0",
         summary="Evidence-first software supply-chain investigation service.",
     )
     database_path = db_path or os.environ.get(
@@ -201,13 +201,13 @@ def _render_index(examples: list[dict[str, str]]) -> str:
         font-size: 13px;
         font-weight: 650;
       }}
-      select, textarea, button {{
+      select, textarea, input, button {{
         width: 100%;
         border-radius: 6px;
         border: 1px solid var(--line);
         font: inherit;
       }}
-      select, textarea {{
+      select, textarea, input {{
         background: #ffffff;
         color: var(--ink);
         padding: 10px;
@@ -216,6 +216,13 @@ def _render_index(examples: list[dict[str, str]]) -> str:
         min-height: 132px;
         resize: vertical;
       }}
+      input[hidden], .source-fields[hidden] {{ display: none; }}
+      .source-fields {{
+        border-top: 1px solid var(--line);
+        margin-top: 12px;
+        padding-top: 12px;
+      }}
+      .source-fields label:not(:first-child) {{ margin-top: 10px; }}
       button {{
         margin-top: 14px;
         border-color: var(--blue);
@@ -331,9 +338,33 @@ def _render_index(examples: list[dict[str, str]]) -> str:
     <main class="shell">
       <aside>
         <form id="investigation-form">
-          <label for="artifact">Artifact</label>
-          <select id="artifact" name="input_path">
-            {options}
+          <label for="source-mode">Source</label>
+          <select id="source-mode" name="source_mode">
+            <option value="file">Saved evidence export</option>
+            <option value="live">Live ALBS build</option>
+          </select>
+          <div id="file-fields" class="source-fields">
+            <label for="artifact">Artifact</label>
+            <select id="artifact" name="input_path">
+              {options}
+            </select>
+          </div>
+          <div id="live-fields" class="source-fields" hidden>
+            <label for="build-id">ALBS build ID</label>
+            <input id="build-id" name="build_id" type="number" min="1">
+            <label for="package">Package</label>
+            <input id="package" name="package" placeholder="nginx-core">
+            <label for="arch">Architecture</label>
+            <input id="arch" name="arch" placeholder="x86_64">
+            <label for="sbom-path">SBOM path</label>
+            <input id="sbom-path" name="sbom_path" placeholder="/data/artifact.cdx.json">
+            <label for="ecosystem">OSV ecosystem</label>
+            <input id="ecosystem" name="osv_ecosystem" placeholder="AlmaLinux:9">
+          </div>
+          <label for="policy-profile" style="margin-top:14px">Policy profile</label>
+          <select id="policy-profile" name="policy_profile">
+            <option value="enterprise-linux-default@1.0.0">Enterprise Linux default 1.0.0</option>
+            <option value="enterprise-linux-strict@1.0.0">Enterprise Linux strict 1.0.0</option>
           </select>
           <label for="question" style="margin-top:14px">Question</label>
           <textarea id="question" name="question">{escape(DEFAULT_QUESTION)}</textarea>
@@ -352,6 +383,16 @@ def _render_index(examples: list[dict[str, str]]) -> str:
       const form = document.getElementById("investigation-form");
       const result = document.getElementById("result");
       const submit = document.getElementById("submit");
+      const sourceMode = document.getElementById("source-mode");
+      const fileFields = document.getElementById("file-fields");
+      const liveFields = document.getElementById("live-fields");
+
+      sourceMode.addEventListener("change", () => {{
+        const live = sourceMode.value === "live";
+        fileFields.hidden = live;
+        liveFields.hidden = !live;
+        form.build_id.required = live;
+      }});
 
       function text(value) {{
         return String(value ?? "").replace(/[&<>"']/g, (char) => ({{
@@ -473,10 +514,21 @@ def _render_index(examples: list[dict[str, str]]) -> str:
         result.className = "empty";
         result.textContent = "Investigation running...";
         const body = {{
-          input_path: form.input_path.value || "{escape(default_input, quote=True)}",
           question: form.question.value,
+          policy_profile: form.policy_profile.value,
           pause_before_review: form.pause_before_review.checked
         }};
+        if (form.source_mode.value === "live") {{
+          body.live = {{
+            build_id: Number(form.build_id.value),
+            package: form.package.value || null,
+            arch: form.arch.value || null,
+            sbom_path: form.sbom_path.value || null,
+            osv_ecosystem: form.osv_ecosystem.value || null
+          }};
+        }} else {{
+          body.input_path = form.input_path.value || "{escape(default_input, quote=True)}";
+        }}
         try {{
           const response = await fetch("/api/v1/investigations", {{
             method: "POST",

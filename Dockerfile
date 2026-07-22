@@ -11,7 +11,7 @@ COPY src ./src
 COPY examples ./examples
 COPY eval ./eval
 
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir '.[live]'
 
 EXPOSE 8080
 

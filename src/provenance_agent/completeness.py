@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
 from .contracts import CompletenessAssessment, Contradiction
@@ -9,6 +10,7 @@ from .normalization import (
     EDGP_ALBS_ARTIFACT_INVENTORY_SCHEMA,
     EDGP_GRAPH_SNAPSHOT_SCHEMA,
     EDGP_RPM_ALBS_PROVENANCE_SCHEMA,
+    EDGP_PUBLIC_ADVISORY_FEED_SCHEMA,
     SIMPLE_SCHEMA,
 )
 
@@ -25,7 +27,7 @@ def assess_completeness(
     if export.get("source_schema"):
         present.add("source_coverage")
 
-    _collect_source_coverage(export, required, present)
+    _collect_source_coverage(export, required, present, artifact=artifact)
     missing = sorted(required - present)
     contradictory = sorted({item.category for item in contradictions})
     score = round(100 * len(present & required) / len(required)) if required else 100
@@ -42,6 +44,8 @@ def _collect_source_coverage(
     export: dict[str, Any],
     required: set[str],
     present: set[str],
+    *,
+    artifact: dict[str, Any],
 ) -> None:
     schema = export["source_schema"]
     source = export["source"]
@@ -51,6 +55,7 @@ def _collect_source_coverage(
                 {"source_schema": child.get("schema"), "source": child},
                 required,
                 present,
+                artifact=artifact,
             )
         return
     if schema == SIMPLE_SCHEMA:
@@ -152,6 +157,35 @@ def _collect_source_coverage(
             and all(edge.get("source") in node_ids and edge.get("target") in node_ids for edge in edges)
         ):
             present.add("graph_integrity")
+        return
+    if schema == EDGP_PUBLIC_ADVISORY_FEED_SCHEMA:
+        required.update({"vulnerability_coverage", "advisory_freshness"})
+        query = source.get("query") or {}
+        matches_artifact = (
+            str(query.get("package") or "") == str(artifact.get("name") or "")
+            and str(query.get("version") or "") == str(artifact.get("version") or "")
+        )
+        if (
+            query.get("status") == "complete"
+            and not query.get("truncated", False)
+            and matches_artifact
+        ):
+            present.add("vulnerability_coverage")
+        if matches_artifact and _advisory_query_is_fresh(query):
+            present.add("advisory_freshness")
+
+
+def _advisory_query_is_fresh(query: dict[str, Any]) -> bool:
+    if not query.get("fresh") or query.get("status") != "complete":
+        return False
+    try:
+        retrieved_at = datetime.fromisoformat(str(query["retrieved_at"]))
+        if retrieved_at.tzinfo is None:
+            return False
+        age = (datetime.now(UTC) - retrieved_at.astimezone(UTC)).total_seconds()
+        return 0 <= age <= int(query["max_age_seconds"])
+    except (KeyError, TypeError, ValueError):
+        return False
 
 
 def _has_cas_edge(

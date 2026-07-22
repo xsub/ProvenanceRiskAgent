@@ -20,6 +20,7 @@ def test_mcp_exposes_planned_normalized_capabilities():
         "retrieve_vulnerabilities",
         "evaluate_policy",
         "evaluate_artifact_risk",
+        "evaluate_live_artifact",
         "explain_decision",
     }
 

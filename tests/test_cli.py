@@ -5,6 +5,7 @@ import pytest
 from typer.testing import CliRunner
 
 from provenance_agent.cli import app
+from provenance_agent.repository import load_export
 
 
 def test_analyze_subcommand_runs_suspicious_fixture():
@@ -49,3 +50,54 @@ def test_analyze_subcommand_can_emit_json():
     assert payload["risk_score"] == 93
     assert payload["requires_review"] is True
     assert payload["evidence"][0]["code"] == "BUILDER_NOT_ALLOWED"
+
+
+def test_analyze_live_subcommand_uses_live_workflow(monkeypatch):
+    from provenance_agent import workflow
+
+    class FakeAcquirer:
+        def acquire(self, request, *, advisory_max_age_seconds):
+            export = load_export("examples/clean-build.json")
+            export["acquisition"] = [
+                {
+                    "adapter": "fake-live",
+                    "operation": "acquire",
+                    "source_uri": "https://build.almalinux.org",
+                    "status": "succeeded",
+                    "duration_ms": 1,
+                }
+            ]
+            return export
+
+    monkeypatch.setattr(
+        workflow.LiveAcquirer,
+        "from_environment",
+        classmethod(lambda cls: FakeAcquirer()),
+    )
+    result = CliRunner().invoke(
+        app,
+        [
+            "analyze-live",
+            "42",
+            "--ecosystem",
+            "AlmaLinux:9",
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["decision_state"] == "ALLOW"
+    assert payload["acquisition"][0]["adapter"] == "fake-live"
+
+
+def test_policy_profile_commands_are_executable():
+    runner = CliRunner()
+    profiles = runner.invoke(app, ["policy-profiles"])
+    calibration = runner.invoke(app, ["calibrate-policy"])
+
+    assert profiles.exit_code == 0
+    assert len(json.loads(profiles.output)) == 2
+    assert calibration.exit_code == 0
+    assert json.loads(calibration.output)["success"] is True

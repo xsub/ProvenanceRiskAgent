@@ -1,0 +1,57 @@
+{
+  "schema": "provenance-risk-agent.policy-profile.v1",
+  "profile_id": "enterprise-linux-strict",
+  "version": "1.0.0",
+  "title": "Enterprise Linux strict",
+  "description": "Higher-sensitivity profile for release gates and security review queues.",
+  "finding_weights": {
+    "ALBS_AFFECTED_BY_VULNERABILITY": 40,
+    "ALBS_ARTIFACT_CAS_MISSING": 40,
+    "ALBS_BUILD_TASK_MISSING": 45,
+    "ALBS_NO_BINARY_RPMS": 30,
+    "ALBS_RELEASE_MISSING": 25,
+    "ALBS_SIGNATURE_MISSING": 55,
+    "ALBS_SOURCE_CAS_MISSING": 40,
+    "BUILDER_NOT_ALLOWED": 45,
+    "EDGP_ALBS_INVENTORY_BUILD_TASK_MISSING": 35,
+    "EDGP_ALBS_INVENTORY_CAS_MISSING": 35,
+    "EDGP_ALBS_INVENTORY_EMPTY": 35,
+    "EDGP_GRAPH_DANGLING_EDGES": 45,
+    "EDGP_GRAPH_ROOT_MISSING": 30,
+    "EDGP_GRAPH_STATS_MISMATCH": 40,
+    "EDGP_LARGE_BLAST_RADIUS": 25,
+    "EDGP_RPM_ALBS_BUILD_UNKNOWN": 30,
+    "EDGP_RPM_ALBS_CAS_MISSING": 35,
+    "EDGP_RPM_ALBS_RELEASE_MISSING": 20,
+    "EDGP_RPM_ALBS_UNMATCHED_PACKAGES": 60,
+    "NOT_REPRODUCIBLE": 35,
+    "SIGNATURE_MISSING": 55
+  },
+  "vulnerability_weights": {
+    "unknown": 15,
+    "none": 0,
+    "low": 8,
+    "medium": 15,
+    "high": 30,
+    "critical": 45
+  },
+  "blast_radius": {
+    "high_count": 5,
+    "high_weight": 40
+  },
+  "risk_bands": {
+    "low": 1,
+    "medium": 20,
+    "high": 40,
+    "critical": 70
+  },
+  "decision": {
+    "allow_min_confidence": 85,
+    "unknown_below_completeness": 60,
+    "unknown_below_confidence": 50,
+    "policy_review_risk_score": 25,
+    "automatic_deny_score": null
+  },
+  "advisory_max_age_seconds": 21600,
+  "calibration_dataset": "eval/golden/cases.json"
+}

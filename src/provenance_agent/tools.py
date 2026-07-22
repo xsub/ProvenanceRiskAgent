@@ -12,6 +12,7 @@ from .normalization import (
     COMBINED_SCHEMA,
     EDGP_ALBS_ARTIFACT_INVENTORY_SCHEMA,
     EDGP_GRAPH_SNAPSHOT_SCHEMA,
+    EDGP_PUBLIC_ADVISORY_FEED_SCHEMA,
     EDGP_RPM_ALBS_PROVENANCE_SCHEMA,
     NORMALIZED_SCHEMA,
     SIMPLE_SCHEMA,
@@ -91,11 +92,15 @@ def inspect_vulnerabilities(export_json: str) -> list[dict]:
                     f"{vuln.id} is unresolved with severity {vuln.severity}.",
                     weights[vuln.severity],
                     f"vulnerabilities[{index}]",
+                    severity=vuln.severity,
                 ))
         return findings
 
     if export["source_schema"] == ALBS_GRAPH_SCHEMA:
         return _inspect_albs_vulnerabilities(export["source"])
+
+    if export["source_schema"] == EDGP_PUBLIC_ADVISORY_FEED_SCHEMA:
+        return _inspect_edgp_advisories(export["source"])
 
     return []
 
@@ -335,6 +340,7 @@ def calculate_edgp_blast_radius(export_json: str) -> list[dict]:
         ),
         weight,
         "root + edges (bounded reverse traversal)",
+        attributes={"dependent_count": len(dependents)},
     )]
 
 
@@ -360,6 +366,8 @@ def summarize_source_coverage(export_json: str) -> list[dict]:
         return _summarize_edgp_albs_inventory(source)
     if source_schema == EDGP_GRAPH_SNAPSHOT_SCHEMA:
         return _summarize_edgp_graph_snapshot(source)
+    if source_schema == EDGP_PUBLIC_ADVISORY_FEED_SCHEMA:
+        return _summarize_edgp_advisories(source)
     if source_schema == SIMPLE_SCHEMA:
         return [_observation(
             "SIMPLE_EXPORT_SCOPE",
@@ -412,12 +420,22 @@ def _loads(export_json: str) -> dict[str, Any]:
     return json.loads(export_json)
 
 
-def _evidence(code: str, finding: str, weight: int, source: str) -> dict:
+def _evidence(
+    code: str,
+    finding: str,
+    weight: int,
+    source: str,
+    *,
+    severity: str | None = None,
+    attributes: dict[str, Any] | None = None,
+) -> dict:
     return Evidence(
         code=code,
         finding=finding,
         weight=weight,
         source=source,
+        severity=severity,
+        attributes=attributes or {},
     ).model_dump()
 
 
@@ -549,6 +567,23 @@ def _summarize_edgp_graph_snapshot(source: dict[str, Any]) -> list[dict]:
     )]
 
 
+def _summarize_edgp_advisories(source: dict[str, Any]) -> list[dict]:
+    query = source.get("query") or {}
+    advisories = source.get("advisories") or []
+    unique_ids = {str(item.get("id")) for item in advisories if item.get("id")}
+    status = str(query.get("status") or "unknown")
+    freshness = "fresh" if query.get("fresh") else "not fresh"
+    return [_observation(
+        "EDGP_ADVISORY_QUERY_COVERAGE",
+        (
+            f"OSV query status={status}, {freshness}; {len(unique_ids)} unique advisory "
+            f"record(s) for {query.get('package')!r} {query.get('version')!r} "
+            f"in {query.get('ecosystem')!r}."
+        ),
+        "query + advisories",
+    )]
+
+
 def _inspect_albs_signatures(source: dict[str, Any]) -> list[dict]:
     graph = _albs_graph(source)
     released_rpms = [
@@ -588,6 +623,48 @@ def _inspect_albs_vulnerabilities(source: dict[str, Any]) -> list[dict]:
         30,
         "edges[relation=affected_by]",
     )]
+
+
+def _inspect_edgp_advisories(source: dict[str, Any]) -> list[dict]:
+    query = source.get("query") or {}
+    if query.get("status") != "complete":
+        return []
+    package = str(query.get("package") or "")
+    selected: dict[str, tuple[int, dict[str, Any], str]] = {}
+    severity_rank = {
+        "unknown": 0,
+        "none": 1,
+        "low": 2,
+        "medium": 3,
+        "high": 4,
+        "critical": 5,
+    }
+    for index, advisory in enumerate(source.get("advisories") or []):
+        if package and str(advisory.get("package") or "") != package:
+            continue
+        advisory_id = str(advisory.get("id") or "UNKNOWN")
+        severity = str(advisory.get("severity") or "unknown").lower()
+        if severity not in severity_rank:
+            severity = "unknown"
+        current = selected.get(advisory_id)
+        if current is None or severity_rank[severity] > severity_rank[current[2]]:
+            selected[advisory_id] = (index, advisory, severity)
+
+    findings: list[dict] = []
+    for advisory_id in sorted(selected):
+        index, _, severity = selected[advisory_id]
+        findings.append(_evidence(
+            "EDGP_ADVISORY_AFFECTS_ARTIFACT",
+            (
+                f"{advisory_id} affects {query.get('package')!r} "
+                f"{query.get('version')!r}; severity {severity}."
+            ),
+            0,
+            f"advisories[{index}]",
+            severity=severity,
+            attributes={"advisory_id": advisory_id},
+        ))
+    return findings
 
 
 def _albs_graph(source: dict[str, Any]) -> dict[str, Any]:

@@ -13,9 +13,14 @@ ALBS_GRAPH_SCHEMA = "albs-provenance-explorer/v1"
 EDGP_RPM_ALBS_PROVENANCE_SCHEMA = "edgp.rpm.albs_provenance.v1"
 EDGP_GRAPH_SNAPSHOT_SCHEMA = "edgp.graph.snapshot.v1"
 EDGP_ALBS_ARTIFACT_INVENTORY_SCHEMA = "edgp.albs.artifact_inventory.v1"
+EDGP_PUBLIC_ADVISORY_FEED_SCHEMA = "edgp.public.advisory_feed.v1"
 
 
 def normalize_export(raw: dict[str, Any], source_path: Path) -> dict[str, Any]:
+    return normalize_payload(raw, str(source_path))
+
+
+def normalize_payload(raw: dict[str, Any], source_path: str) -> dict[str, Any]:
     schema = raw.get("schema")
     if schema == ALBS_GRAPH_SCHEMA:
         artifact = _artifact_from_albs_graph(raw)
@@ -25,6 +30,8 @@ def normalize_export(raw: dict[str, Any], source_path: Path) -> dict[str, Any]:
         artifact = _artifact_from_graph_snapshot(raw)
     elif schema == EDGP_ALBS_ARTIFACT_INVENTORY_SCHEMA:
         artifact = _artifact_from_albs_inventory(raw)
+    elif schema == EDGP_PUBLIC_ADVISORY_FEED_SCHEMA:
+        artifact = _artifact_from_advisory_query(raw)
     elif schema == COMBINED_SCHEMA:
         _validate_combined_sources(raw)
         artifact = _artifact_from_combined(raw)
@@ -38,15 +45,17 @@ def normalize_export(raw: dict[str, Any], source_path: Path) -> dict[str, Any]:
             "Unsupported provenance export. Expected one of: "
             f"{SIMPLE_SCHEMA}, {COMBINED_SCHEMA}, {ALBS_GRAPH_SCHEMA}, "
             f"{EDGP_RPM_ALBS_PROVENANCE_SCHEMA}, {EDGP_GRAPH_SNAPSHOT_SCHEMA}, "
-            f"{EDGP_ALBS_ARTIFACT_INVENTORY_SCHEMA}."
+            f"{EDGP_ALBS_ARTIFACT_INVENTORY_SCHEMA}, "
+            f"{EDGP_PUBLIC_ADVISORY_FEED_SCHEMA}."
         )
 
     return {
         "schema": NORMALIZED_SCHEMA,
         "source_schema": schema,
-        "source_path": str(source_path),
+        "source_path": source_path,
         "artifact": artifact,
         "source": raw,
+        "acquisition": raw.get("acquisition", []),
     }
 
 
@@ -110,6 +119,15 @@ def _artifact_from_albs_inventory(raw: dict[str, Any]) -> dict[str, str]:
     }
 
 
+def _artifact_from_advisory_query(raw: dict[str, Any]) -> dict[str, str]:
+    query = raw.get("query") or {}
+    return {
+        "name": str(query.get("package") or "advisory-query"),
+        "version": str(query.get("version") or ""),
+        "digest": "",
+    }
+
+
 def _artifact_from_combined(raw: dict[str, Any]) -> dict[str, str]:
     artifact = raw.get("artifact") or {}
     return {
@@ -129,6 +147,7 @@ def _validate_combined_sources(raw: dict[str, Any]) -> None:
         EDGP_RPM_ALBS_PROVENANCE_SCHEMA,
         EDGP_GRAPH_SNAPSHOT_SCHEMA,
         EDGP_ALBS_ARTIFACT_INVENTORY_SCHEMA,
+        EDGP_PUBLIC_ADVISORY_FEED_SCHEMA,
     }
     for index, source in enumerate(sources):
         schema = source.get("schema") if isinstance(source, dict) else None

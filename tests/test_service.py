@@ -124,3 +124,19 @@ def test_service_persists_transient_retry_attempt(tmp_path, monkeypatch):
     assert calls == 2
     assert len(retries) == 1
     assert retries[0].details["retrying"] is True
+
+
+def test_service_applies_requested_versioned_policy_profile(tmp_path):
+    service = InvestigationService(InvestigationStore(tmp_path / "strict.sqlite3"))
+
+    result = service.run_investigation(
+        InvestigationRequest(
+            input_path="examples/clean-build.json",
+            policy_profile="enterprise-linux-strict@1.0.0",
+        )
+    )
+
+    assert result.policy_evaluation is not None
+    assert result.policy_evaluation.profile == "enterprise-linux-strict@1.0.0"
+    assert result.policy_profile["version"] == "1.0.0"
+    assert result.decision_state == "REVIEW"

@@ -53,7 +53,7 @@ class InvestigationService:
         self.store.create_investigation(
             investigation_id=investigation_id,
             question=request.question,
-            input_path=request.input_path,
+            input_path=request.source_reference,
         )
         self.store.set_status(investigation_id, "running")
         self.store.add_event(
@@ -62,7 +62,9 @@ class InvestigationService:
             "Investigation started.",
             {
                 "question": request.question,
-                "input_path": request.input_path,
+                "source": request.source_reference,
+                "source_mode": "live" if request.live else "file",
+                "policy_profile": request.policy_profile,
                 "pause_before_review": request.pause_before_review,
             },
         )
@@ -74,9 +76,16 @@ class InvestigationService:
                 interrupt_reviews=request.pause_before_review,
             )
             config = self._config(investigation_id)
+            workflow_input: dict[str, Any] = {
+                "policy_profile_id": request.policy_profile,
+            }
+            if request.live is not None:
+                workflow_input["live"] = request.live.model_dump(mode="json")
+            else:
+                workflow_input["input_path"] = request.input_path
             workflow_result = run_with_retry(
                 lambda: graph.invoke(
-                    {"input_path": request.input_path},
+                    workflow_input,
                     config=config if request.pause_before_review else None,
                 ),
                 on_attempt=lambda attempt: self._record_retry(
@@ -230,7 +239,7 @@ class InvestigationService:
             investigation_id=investigation_id,
             status=status,
             question=request.question,
-            input_path=request.input_path,
+            input_path=request.source_reference,
             artifact=export["artifact"],
             source_schema=export["source_schema"],
             decision_state=workflow_result["decision_state"],
@@ -243,6 +252,8 @@ class InvestigationService:
             completeness=completeness,
             confidence=confidence,
             policy_evaluation=policy,
+            policy_profile=workflow_result.get("policy_profile", {}),
+            acquisition=workflow_result.get("acquisition", []),
             contradictions=contradictions,
             missing_evidence=completeness.missing_categories,
             review_request=review_request,
@@ -254,6 +265,20 @@ class InvestigationService:
         )
 
     def _record_analysis(self, result: InvestigationResult) -> None:
+        if result.acquisition:
+            self.store.add_event(
+                result.investigation_id,
+                "live_sources_acquired",
+                "Live source adapters completed with a recorded acquisition trace.",
+                {
+                    "policy_profile": result.policy_evaluation.profile
+                    if result.policy_evaluation
+                    else None,
+                    "adapters": [
+                        trace.model_dump(mode="json") for trace in result.acquisition
+                    ],
+                },
+            )
         self.store.add_event(
             result.investigation_id,
             "artifact_resolved",
@@ -377,7 +402,7 @@ class InvestigationService:
             investigation_id=investigation_id,
             status="failed",
             question=request.question,
-            input_path=request.input_path,
+            input_path=request.source_reference,
             artifact={},
             source_schema="unknown",
             decision_state="ERROR",

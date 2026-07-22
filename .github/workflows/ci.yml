@@ -44,3 +44,6 @@ jobs:
 
       - name: Run deterministic golden evaluation
         run: provenance-agent evaluate-golden
+
+      - name: Calibrate policy profiles
+        run: provenance-agent calibrate-policy

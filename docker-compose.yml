@@ -5,8 +5,18 @@ services:
       PROVENANCE_AGENT_DB: /data/provenance-agent.sqlite3
     ports:
       - "8080:8080"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8080/readyz', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      retries: 5
     volumes:
       - provenance-agent-data:/data
+      - ./examples:/data/examples:ro
 
 volumes:
   provenance-agent-data:

@@ -29,6 +29,7 @@ Run the ten-case deterministic evaluation:
 
 ```bash
 provenance-agent evaluate-golden
+provenance-agent calibrate-policy
 ```
 
 ## Continuous Integration
@@ -40,6 +41,7 @@ and 3.13 for pushes to `main` and pull requests:
 ruff check .
 pytest -q
 provenance-agent evaluate-golden
+provenance-agent calibrate-policy
 ```
 
 CI intentionally uses only repository fixtures. Tests that inspect sibling
@@ -67,6 +69,15 @@ Run against local ALBS/EDGP project contracts:
 provenance-agent analyze /Users/pawel/_DEV/ALBS-provenance/albs-provenance-explorer/examples/demo-nginx-core/nginx-core-x86_64-trust.json
 provenance-agent analyze /Users/pawel/_DEV/SoftwareSupplyChain/tests/fixtures/rpm-albs-provenance.json
 provenance-agent analyze /Users/pawel/_DEV/SoftwareSupplyChain/tests/fixtures/albs-artifact-inventory.json
+```
+
+Run the live path when external networking is available:
+
+```bash
+PROVENANCE_AGENT_ALBS_GRAPH=/path/to/albs-graph \
+PROVENANCE_AGENT_EDGP=/path/to/edgp \
+provenance-agent analyze-live 57810 \
+  --package nginx-core --arch x86_64 --ecosystem AlmaLinux:10
 ```
 
 Run with optional LLM narration:
@@ -107,6 +118,10 @@ The current local harness can verify:
 - ALBS Provenance Explorer graph export support.
 - EDGP RPM-to-ALBS provenance report support.
 - EDGP ALBS artifact inventory report support.
+- Live ALBS/EDGP command construction, schema checks, timeout and output bounds.
+- CycloneDX structure, digest, and ALBS `described_by` linkage validation.
+- Exact package/version OSV normalization and incomplete-on-failure semantics.
+- Versioned policy-profile loading and two-profile calibration invariants.
 - Operational coverage facts in reports.
 - JSON output for programmatic consumption.
 - REST/MCP deterministic result agreement.
@@ -116,7 +131,8 @@ The current local harness can verify:
 
 The current local harness does not claim to verify:
 
-- production ALBS feed coverage beyond local exports;
-- live advisory freshness or production CVE completeness;
+- external ALBS/errata/OSV availability in offline CI;
+- completeness of upstream production CVE data beyond the exact-query contract;
+- authenticity stronger than HTTPS transport plus response digests;
 - multi-process checkpoint concurrency or distributed worker recovery;
 - model-provider behavior when optional LLM narration is enabled.

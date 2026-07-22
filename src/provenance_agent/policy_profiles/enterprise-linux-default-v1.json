@@ -1,0 +1,57 @@
+{
+  "schema": "provenance-risk-agent.policy-profile.v1",
+  "profile_id": "enterprise-linux-default",
+  "version": "1.0.0",
+  "title": "Enterprise Linux default",
+  "description": "Compatibility profile preserving the calibrated MVP scoring model.",
+  "finding_weights": {
+    "ALBS_AFFECTED_BY_VULNERABILITY": 30,
+    "ALBS_ARTIFACT_CAS_MISSING": 30,
+    "ALBS_BUILD_TASK_MISSING": 35,
+    "ALBS_NO_BINARY_RPMS": 20,
+    "ALBS_RELEASE_MISSING": 15,
+    "ALBS_SIGNATURE_MISSING": 40,
+    "ALBS_SOURCE_CAS_MISSING": 30,
+    "BUILDER_NOT_ALLOWED": 35,
+    "EDGP_ALBS_INVENTORY_BUILD_TASK_MISSING": 25,
+    "EDGP_ALBS_INVENTORY_CAS_MISSING": 25,
+    "EDGP_ALBS_INVENTORY_EMPTY": 25,
+    "EDGP_GRAPH_DANGLING_EDGES": 35,
+    "EDGP_GRAPH_ROOT_MISSING": 20,
+    "EDGP_GRAPH_STATS_MISMATCH": 30,
+    "EDGP_LARGE_BLAST_RADIUS": 15,
+    "EDGP_RPM_ALBS_BUILD_UNKNOWN": 20,
+    "EDGP_RPM_ALBS_CAS_MISSING": 25,
+    "EDGP_RPM_ALBS_RELEASE_MISSING": 10,
+    "EDGP_RPM_ALBS_UNMATCHED_PACKAGES": 45,
+    "NOT_REPRODUCIBLE": 25,
+    "SIGNATURE_MISSING": 40
+  },
+  "vulnerability_weights": {
+    "unknown": 8,
+    "none": 0,
+    "low": 3,
+    "medium": 8,
+    "high": 18,
+    "critical": 30
+  },
+  "blast_radius": {
+    "high_count": 10,
+    "high_weight": 30
+  },
+  "risk_bands": {
+    "low": 1,
+    "medium": 25,
+    "high": 50,
+    "critical": 75
+  },
+  "decision": {
+    "allow_min_confidence": 70,
+    "unknown_below_completeness": 50,
+    "unknown_below_confidence": 35,
+    "policy_review_risk_score": 50,
+    "automatic_deny_score": null
+  },
+  "advisory_max_age_seconds": 43200,
+  "calibration_dataset": "eval/golden/cases.json"
+}

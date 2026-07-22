@@ -38,9 +38,9 @@ The application must answer questions such as:
 ## Scope
 
 The agent is an orchestration and presentation layer over deterministic source
-engines. It starts with external adapters over JSON exported from ALBS
-Provenance Explorer and EDGP, then evolves toward service, UI, MCP, and
-container delivery.
+engines. It supports reproducible JSON exports and live process adapters for
+ALBS Provenance Explorer and EDGP, then exposes the shared workflow through
+service, UI, CLI, MCP, and container delivery.
 
 In scope:
 
@@ -173,6 +173,13 @@ risk/completeness/confidence assessments, applies explicit policy rules,
 supports human interrupt/resume, and renders Markdown, JSON, REST, UI, or MCP
 output.
 
+The live extension invokes pinned ALBS/EDGP versions, validates and hashes an
+official AlmaLinux errata snapshot, queries the OSV exact-package API, validates
+CycloneDX structure and ALBS linkage, and records adapter timing and response
+hashes. Failed or stale advisory acquisition reduces completeness instead of
+becoming evidence of safety. Immutable policy profiles move risk weights and
+decision thresholds out of tool code and expose their version in every result.
+
 Automated verification is implemented in `.github/workflows/ci.yml`. Every
 push to `main` and every pull request runs Ruff, pytest, and the deterministic
 golden evaluation on Python 3.11, 3.12, and 3.13. This CI scope uses bundled
@@ -189,6 +196,7 @@ Supported source contracts:
 - `edgp.rpm.albs_provenance.v1`
 - `edgp.albs.artifact_inventory.v1`
 - `edgp.graph.snapshot.v1`
+- `edgp.public.advisory_feed.v1`
 - `provenance-risk-agent.simple.v1` as a compatibility fixture only.
 
 Current verification commands:
@@ -200,11 +208,12 @@ python -m pip install -e '.[dev]'
 pytest -q
 ruff check .
 provenance-agent evaluate-golden
+provenance-agent calibrate-policy
 ```
 
-The 2026-07-22 local baseline is 34 passing pytest cases, Ruff passing, and
-10/10 golden scenarios passing. One upstream Starlette/httpx deprecation
-warning remains non-fatal.
+The 2026-07-22 local baseline is 47 passing pytest cases, Ruff passing, 10/10
+golden scenarios passing, and a passing default-versus-strict calibration
+report. One upstream Starlette/httpx deprecation warning remains non-fatal.
 
 Container-first smoke path:
 
@@ -254,6 +263,8 @@ RabbitMQ, Celery, and Redis are deferred extension points:
   `/Users/pawel/_DEV/SoftwareSupplyChain`.
 - `edgp.graph.snapshot.v1` from
   `/Users/pawel/_DEV/SoftwareSupplyChain`.
+- `edgp.public.advisory_feed.v1` from
+  `/Users/pawel/_DEV/SoftwareSupplyChain`.
 
 ## Planning References
 
@@ -264,15 +275,16 @@ RabbitMQ, Celery, and Redis are deferred extension points:
 - `docs/adr/0003-real-edgp-albs-input-contracts.md`
 - `docs/adr/0004-operational-coverage-reporting.md`
 - `docs/adr/0005-persistent-review-retry-and-mcp.md`
+- `docs/adr/0006-live-acquisition-advisory-and-policy-profiles.md`
 - `learning-process.md`
 - `harness.md`
 
 ## Post-MVP Decisions
 
-- Governance, versioning, and calibration of policy profiles and risk weights.
-- Production-governed evaluation data for real ALBS artifacts and expected
-  evidence.
-- Packaging strategy for optional ALBS/EDGP process adapters.
+- Production-governed evaluation data for real ALBS artifacts, reviewed labels,
+  and explicit false-positive/false-negative costs.
+- Signed advisory/errata snapshots or transparency verification where HTTPS
+  and response hashes are insufficient for source authenticity.
 - When SQLite checkpoints should move to PostgreSQL for concurrent users.
 - Whether MCP streamable HTTP should be co-hosted with REST; the MVP defaults
   to stdio and also supports standalone SSE or streamable HTTP.
