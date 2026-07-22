@@ -307,3 +307,10 @@ Official `checkout` and `setup-python` releases are pinned to complete commit
 SHAs rather than mutable major-version tags, while comments retain their human
 readable release numbers. This reduces tag-retargeting risk at the cost of
 requiring an explicit reviewed update when a new action release is adopted.
+
+The first hosted baseline, GitHub Actions run
+[`29882455748`](https://github.com/xsub/ProvenanceRiskAgent/actions/runs/29882455748)
+for commit `735cf27`, completed successfully on 2026-07-22. All three Python
+jobs passed installation, Ruff, pytest, and the deterministic golden
+evaluation. This converts the compatibility statement from a local assumption
+into evidence produced by the hosted Linux runner matrix.
