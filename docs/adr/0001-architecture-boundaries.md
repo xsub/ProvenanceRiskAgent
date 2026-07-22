@@ -15,7 +15,7 @@ The user-stated direction is:
 
 - Use LangChain as the layer for models, prompts and tools.
 - Use LangGraph as the explicit process automaton with stages, state, branches
-  and an eventual stop-before-decision capability.
+  and a persistent stop-before-decision capability.
 - Build external adapters over JSON exported from ALBS Provenance Explorer and
   EDGP.
 - Do not push the LLM into the analytical core.
@@ -30,8 +30,11 @@ The project will use:
 - LangChain tools as typed callable boundaries over provenance data.
 - LangChain prompt/model composition only for evidence-grounded narration.
 - LangGraph to model the workflow state machine, including load, evidence
-  collection, scoring, conditional review routing, explanation and report
-  rendering.
+  collection, contradiction detection, scoring, policy, conditional review
+  routing, explanation and report rendering.
+- SQLite for the investigation event log and LangGraph checkpoints.
+- MCP as a normalized agent-facing interface over the same deterministic graph
+  used by CLI and REST.
 
 The LLM must not create, modify or override:
 
@@ -49,13 +52,12 @@ The LLM must not create, modify or override:
 - LLM failures affect explanation quality, not scoring correctness.
 - Real ALBS compatibility depends on obtaining and validating the real export
   schema.
-- A future human-review interrupt should be implemented in LangGraph rather than
-  hidden in prompt logic.
+- Human review is an explicit LangGraph interrupt and resumes from a persistent
+  checkpoint rather than being hidden in prompt logic.
 
 ## Follow-Up ADR Candidates
 
 - ALBS Provenance Explorer and EDGP export schemas and adapter contracts.
-- Human review interrupt/resume persistence.
-- Checkpointer backend selection.
+- Conditions for moving checkpoints from SQLite to PostgreSQL.
 - Risk scoring model and policy vocabulary.
 - Evaluation data governance for real artifacts.

@@ -98,7 +98,9 @@ It demonstrates:
 - LangChain prompt/model composition for evidence-grounded explanation;
 - LangGraph state, nodes, conditional routing and checkpoints;
 - separation of deterministic security logic from probabilistic narration;
-- a clean future integration boundary for ALBS Provenance Explorer or EDGP.
+- stable evidence IDs and source pointers across ALBS and EDGP records;
+- persistent human review with LangGraph interrupt/resume;
+- one normalized MCP interface over the deterministic investigation graph.
 
 ## Target Architecture
 
@@ -115,8 +117,8 @@ flowchart TB
   subgraph control["Agent control plane"]
     direction TB
     workflow["LangGraph investigation workflow"]:::workflow;
-    planner["Intent parsing<br/>and investigation plan"]:::workflow;
     adapter_tools["Controlled adapter tools"]:::workflow;
+    checkpoints["SQLite checkpoints<br/>interrupt and resume"]:::workflow;
   end
 
   subgraph sources["Source evidence engines"]
@@ -128,8 +130,10 @@ flowchart TB
   subgraph decisioning["Decision pipeline"]
     direction TB
     evidence_records["Normalized evidence records"]:::evidence;
-    policy_engine["Deterministic policy and risk"]:::policy;
+    consistency["Missing evidence<br/>and contradictions"]:::policy;
+    policy_engine["Deterministic policy<br/>and risk"]:::policy;
     assessment["Completeness and confidence"]:::policy;
+    review["Human review<br/>when required"]:::result;
     explainer["Grounded explanation<br/>LLM optional"]:::explain;
     response["Decision, findings,<br/>evidence IDs, trace"]:::result;
     delivery["Rendered in UI<br/>returned by REST or MCP"]:::client;
@@ -141,15 +145,17 @@ flowchart TB
   web_ui --> api_service;
   api_service --> workflow;
   mcp_server --> workflow;
-  workflow --> planner;
-  planner --> adapter_tools;
+  workflow --> adapter_tools;
+  workflow <--> checkpoints;
   adapter_tools --> albs_engine;
   adapter_tools --> edgp_engine;
   albs_engine --> evidence_records;
   edgp_engine --> evidence_records;
-  evidence_records --> policy_engine;
+  evidence_records --> consistency;
+  consistency --> policy_engine;
   policy_engine --> assessment;
-  assessment --> explainer;
+  assessment --> review;
+  review --> explainer;
   explainer --> response;
   response --> delivery;
 
@@ -181,22 +187,26 @@ flowchart TD
   load["Load and normalize export"]:::io;
   facts["Collect verified facts<br/>coverage observations"]:::deterministic;
   evidence["Collect risk evidence<br/>policy-relevant findings"]:::deterministic;
-  score["Score deterministic risk"]:::policy;
+  consistency["Detect missing and<br/>contradictory evidence"]:::deterministic;
+  score["Risk, completeness,<br/>confidence and policy"]:::policy;
+  verdict["Propose deterministic verdict"]:::policy;
   route{"Requires human review?"}:::decision;
   explain["Generate grounded explanation<br/>LLM optional"]:::explain;
-  review["Request review<br/>future LangGraph interrupt"]:::review;
+  review["LangGraph interrupt<br/>persist and resume"]:::review;
   report["Render report<br/>facts, evidence, score, trace"]:::result;
   done(["Workflow complete"]):::done;
 
   request --> load;
   load --> facts;
   facts --> evidence;
-  evidence --> score;
-  score --> route;
+  evidence --> consistency;
+  consistency --> score;
+  score --> verdict;
+  verdict --> route;
   route -- "no" --> explain;
   route -- "yes" --> review;
   explain --> report;
-  review --> report;
+  review --> explain;
   report --> done;
 
   classDef start fill:#dbeafe,stroke:#2563eb,color:#0f172a,stroke-width:2px;
@@ -210,39 +220,41 @@ flowchart TD
   classDef done fill:#e0f2fe,stroke:#0284c7,color:#082f49,stroke-width:2px;
 ```
 
-A later iteration can replace `request_review` with a LangGraph `interrupt()`
-and persist the workflow using SQLite or PostgreSQL checkpoints.
+Review uses LangGraph `interrupt()` and a SQLite checkpointer. A submitted
+decision resumes the same workflow state and preserves the deterministic
+proposed verdict separately from the human decision.
 
 ## MVP Roadmap
 
-1. **Contracts and fixture catalog**
+1. **Contracts and fixture catalog - complete**
    Add Pydantic contracts for artifact identity, evidence records, findings,
    policy results, decisions, completeness, confidence, and tool traces.
-2. **Two-engine vertical slice**
+2. **Two-engine vertical slice - complete**
    Answer one question for one supplied artifact using ALBS provenance evidence
    and EDGP dependency, advisory, or impact evidence in the same result.
-3. **Policy, risk, completeness, confidence**
+3. **Policy, risk, completeness, confidence - complete**
    Keep risk, evidence completeness, and confidence as separate deterministic
    outputs. Missing evidence must not be reported as proof of safety.
-4. **FastAPI service**
+4. **FastAPI service - complete**
    Add health/readiness, example listing, investigation, event, evidence,
    finding, and direct evaluation endpoints.
-5. **Minimal web UI**
+5. **Minimal web UI - complete**
    Provide a restrained investigation screen for selecting an artifact, asking
    the default question, and viewing evidence, findings, trace, risk,
    completeness, confidence, and decision.
-6. **Docker Compose demonstrator**
+6. **Docker Compose demonstrator - complete**
    Package the app so `docker compose up --build` starts the UI/API/MCP-ready
    service with curated fixtures.
-7. **MCP and golden evaluation**
+7. **MCP and golden evaluation - complete**
    Expose normalized investigation capabilities through MCP and add golden
    cases for missing signatures, unknown builders, vulnerabilities, incomplete
    provenance, contradictions, timeouts, malformed data, and prompt injection.
 
-The current implementation contains the first runnable vertical slice of this
-roadmap: typed investigation contracts, a FastAPI service, a minimal web UI,
-a SQLite investigation event log, Docker Compose packaging, and deterministic
-CLI/API execution over bundled fixtures.
+The MVP roadmap is implemented. The application includes typed contracts,
+stable evidence IDs, source pointers, explicit decision modules, cross-source
+contradiction detection, bounded retries, a FastAPI service, web UI, SQLite
+event log and LangGraph checkpoints, Docker Compose packaging, ten MCP tools,
+and a ten-case offline golden evaluation suite.
 
 ## Input Contract
 
@@ -283,7 +295,7 @@ input:
 }
 ```
 
-## Current MVP Slice
+## Running the MVP
 
 Run the container-first demonstrator:
 
@@ -304,9 +316,13 @@ The same service also exposes:
 - `GET /api/v1/investigations/{id}`
 - `GET /api/v1/investigations/{id}/events`
 - `GET /api/v1/investigations/{id}/evidence`
+- `GET /api/v1/investigations/{id}/findings`
+- `POST /api/v1/investigations/{id}/review`
+- `POST /api/v1/investigations/{id}/resume`
 
-Investigation state is persisted in a local SQLite event log. In the Compose
-setup the database lives under `/data` and is backed by a named volume.
+Investigation state is persisted in a SQLite event log. LangGraph checkpoints
+for paused reviews use a second SQLite database next to it. In the Compose
+setup both live under `/data` and are backed by a named volume.
 
 The local deterministic CLI workflow remains available:
 
@@ -336,6 +352,29 @@ Programmatic output:
 ```bash
 provenance-agent analyze examples/suspicious-build.json --format json
 ```
+
+Run the offline golden evaluation:
+
+```bash
+provenance-agent evaluate-golden
+```
+
+The suite covers a valid signed package, missing signature, unknown builder,
+unresolved vulnerability, incomplete provenance, contradictory ALBS/EDGP
+identity, large reverse-dependency impact, tool timeout and retry exhaustion,
+malformed source data, and prompt injection in package metadata.
+
+Start the MCP server over the default stdio transport:
+
+```bash
+provenance-agent mcp
+```
+
+The MCP surface exposes artifact identity, build provenance,
+signature/integrity, dependencies, reverse dependencies, blast radius,
+vulnerabilities, policy, complete risk evaluation, and grounded explanation.
+Streamable HTTP and SSE transports are also available with
+`--transport streamable-http` and `--transport sse`.
 
 Reports separate verified facts from risk evidence. Verified facts describe
 coverage that was present, such as ALBS signature/CAS/release coverage or EDGP
@@ -374,16 +413,17 @@ depend on one provider.
 ## Planned Extension Points
 
 1. Replace the JSON repository with an ALBS/EDGP HTTP or SQLite adapter.
-2. Add graph queries: reverse dependencies, blast radius and provenance paths.
-3. Add `interrupt()` before review routing or policy override.
-4. Promote the SQLite event log into a LangGraph checkpointer or PostgreSQL
-   store when interrupt/resume workflows become first-class.
-5. Add LangSmith or OpenTelemetry traces.
-6. Build a golden evaluation set of known artifacts and expected evidence.
-7. Add prompt-injection defenses: treat package metadata as untrusted data.
+2. Add authoritative advisory ingestion and richer provenance-path queries.
+3. Move SQLite state to PostgreSQL when concurrent multi-user operation
+   requires it.
+4. Add OpenTelemetry traces and operational service-level objectives.
+5. Add distributed workers only for measured long-running or concurrent jobs.
+6. Expand golden cases with production-governed, versioned ALBS/EDGP exports.
 
 Redis, RabbitMQ, and Celery are deliberately not required for the MVP. Redis
 can later support caching, live progress pub/sub, short-lived locks, or rate
 limits. RabbitMQ/Celery can later support distributed workers and durable
-retry queues. Neither should be the source of truth for evidence or verdicts;
-that belongs in the investigation store.
+retry queues. The current process uses bounded in-process retry with each
+failed attempt persisted in the investigation event log. Neither a future
+broker nor its result backend should become the source of truth for evidence
+or verdicts; that belongs in the investigation store.

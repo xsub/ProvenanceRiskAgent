@@ -63,14 +63,44 @@ class InvestigationStore:
 
                 create table if not exists evidence_records (
                     id integer primary key autoincrement,
+                    evidence_id text not null,
                     investigation_id text not null,
                     kind text not null,
                     code text not null,
                     finding text not null,
                     source text not null,
                     weight integer not null default 0,
+                    source_pointers_json text not null default '[]',
                     foreign key(investigation_id) references investigations(id)
                 );
+                """
+            )
+            columns = {
+                row["name"]
+                for row in connection.execute(
+                    "pragma table_info(evidence_records)"
+                ).fetchall()
+            }
+            if "evidence_id" not in columns:
+                connection.execute(
+                    "alter table evidence_records add column evidence_id text"
+                )
+            if "source_pointers_json" not in columns:
+                connection.execute(
+                    "alter table evidence_records "
+                    "add column source_pointers_json text not null default '[]'"
+                )
+            connection.execute(
+                """
+                update evidence_records
+                set evidence_id = 'legacy_' || id
+                where evidence_id is null or evidence_id = ''
+                """
+            )
+            connection.execute(
+                """
+                create unique index if not exists evidence_records_identity
+                on evidence_records(investigation_id, evidence_id)
                 """
             )
 
@@ -160,20 +190,39 @@ class InvestigationStore:
         with self.connect() as connection:
             cursor = connection.execute(
                 """
-                insert into evidence_records
-                    (investigation_id, kind, code, finding, source, weight)
-                values (?, ?, ?, ?, ?, ?)
+                insert or ignore into evidence_records
+                    (evidence_id, investigation_id, kind, code, finding, source,
+                     weight, source_pointers_json)
+                values (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
+                    record.evidence_id,
                     record.investigation_id,
                     record.kind,
                     record.code,
                     record.finding,
                     record.source,
                     record.weight,
+                    json.dumps(
+                        [
+                            pointer.model_dump(mode="json")
+                            for pointer in record.source_pointers
+                        ],
+                        sort_keys=True,
+                    ),
                 ),
             )
-        return record.model_copy(update={"id": int(cursor.lastrowid)})
+            record_id = cursor.lastrowid
+            if not record_id:
+                row = connection.execute(
+                    """
+                    select id from evidence_records
+                    where investigation_id = ? and evidence_id = ?
+                    """,
+                    (record.investigation_id, record.evidence_id),
+                ).fetchone()
+                record_id = row["id"]
+        return record.model_copy(update={"id": int(record_id)})
 
     def save_result(self, result: InvestigationResult) -> None:
         with self.connect() as connection:
@@ -250,13 +299,14 @@ class InvestigationStore:
         return [
             EvidenceRecord(
                 id=row["id"],
+                evidence_id=row["evidence_id"],
                 investigation_id=row["investigation_id"],
                 kind=row["kind"],
                 code=row["code"],
                 finding=row["finding"],
                 source=row["source"],
                 weight=row["weight"],
+                source_pointers=json.loads(row["source_pointers_json"]),
             )
             for row in rows
         ]
-

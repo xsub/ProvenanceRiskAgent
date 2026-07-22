@@ -1,0 +1,20 @@
+{
+  "artifact": {
+    "name": "demo-unknown-builder",
+    "version": "1.0-1.el9",
+    "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "build": {
+    "builder": "unregistered-builder",
+    "signed": true,
+    "reproducible": true,
+    "source_commit": "2222222"
+  },
+  "dependencies": [],
+  "vulnerabilities": [],
+  "policy": {
+    "allowed_builders": ["albs"],
+    "require_signature": true,
+    "require_reproducible": true
+  }
+}

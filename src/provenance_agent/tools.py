@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import deque
 import json
 from typing import Any
 
@@ -83,13 +84,13 @@ def inspect_vulnerabilities(export_json: str) -> list[dict]:
         source = ProvenanceExport.model_validate(export["source"])
         weights = {"none": 0, "low": 3, "medium": 8, "high": 18, "critical": 30}
         findings: list[dict] = []
-        for vuln in source.vulnerabilities:
+        for index, vuln in enumerate(source.vulnerabilities):
             if not vuln.fixed:
                 findings.append(_evidence(
                     "UNFIXED_VULNERABILITY",
                     f"{vuln.id} is unresolved with severity {vuln.severity}.",
                     weights[vuln.severity],
-                    "vulnerabilities",
+                    f"vulnerabilities[{index}]",
                 ))
         return findings
 
@@ -311,6 +312,33 @@ def inspect_edgp_graph_snapshot(export_json: str) -> list[dict]:
 
 
 @tool
+def calculate_edgp_blast_radius(export_json: str) -> list[dict]:
+    """Calculate bounded reverse-dependency impact for an EDGP graph root."""
+    export = _loads(export_json)
+    if export["source_schema"] != EDGP_GRAPH_SNAPSHOT_SCHEMA:
+        return []
+
+    source = export["source"]
+    root = source.get("root")
+    if not root:
+        return []
+    dependents, truncated = _reverse_dependents(source, str(root), limit=10_000)
+    if len(dependents) < 5:
+        return []
+    weight = 30 if len(dependents) >= 10 else 15
+    suffix = " Traversal stopped at the 10000-node safety limit." if truncated else ""
+    return [_evidence(
+        "EDGP_LARGE_BLAST_RADIUS",
+        (
+            f"Graph root has {len(dependents)} transitive reverse dependent(s)."
+            + suffix
+        ),
+        weight,
+        "root + edges (bounded reverse traversal)",
+    )]
+
+
+@tool
 def summarize_source_coverage(export_json: str) -> list[dict]:
     """Summarize deterministic source coverage facts without changing risk."""
     export = _loads(export_json)
@@ -353,6 +381,7 @@ EVIDENCE_TOOLS = [
     inspect_edgp_rpm_albs_provenance,
     inspect_edgp_albs_inventory,
     inspect_edgp_graph_snapshot,
+    calculate_edgp_blast_radius,
 ]
 
 
@@ -607,3 +636,30 @@ def _has_cas_evidence(node: dict[str, Any]) -> bool:
 def _node_label(node: dict[str, Any]) -> str:
     metadata = node.get("metadata") or {}
     return str(metadata.get("filename") or metadata.get("name") or node.get("label") or node["id"])
+
+
+def _reverse_dependents(
+    source: dict[str, Any],
+    root: str,
+    *,
+    limit: int,
+) -> tuple[set[str], bool]:
+    incoming: dict[str, list[str]] = {}
+    for edge in source.get("edges", []):
+        target = str(edge.get("target"))
+        incoming.setdefault(target, []).append(str(edge.get("source")))
+
+    visited = {root}
+    dependents: set[str] = set()
+    queue = deque([root])
+    while queue and len(dependents) < limit:
+        current = queue.popleft()
+        for dependent in incoming.get(current, []):
+            if dependent in visited:
+                continue
+            visited.add(dependent)
+            dependents.add(dependent)
+            queue.append(dependent)
+            if len(dependents) >= limit:
+                break
+    return dependents, bool(queue)

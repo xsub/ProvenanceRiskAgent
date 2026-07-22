@@ -9,6 +9,7 @@ import typer
 from rich.console import Console
 from rich.markdown import Markdown
 
+from .golden import DEFAULT_MANIFEST, run_golden_suite
 from .workflow import build_graph
 
 app = typer.Typer(no_args_is_help=True)
@@ -55,6 +56,13 @@ def _render_result(result: dict, format: str) -> str:
             "risk_score": result["risk_score"],
             "risk_level": result["risk_level"],
             "requires_review": result["requires_review"],
+            "decision_state": result["decision_state"],
+            "proposed_decision": result["proposed_decision"],
+            "risk": result["risk"],
+            "completeness": result["completeness"],
+            "confidence": result["confidence"],
+            "policy_evaluation": result["policy_evaluation"],
+            "contradictions": result.get("contradictions", []),
             "observations": result.get("observations", []),
             "evidence": result.get("evidence", []),
             "explanation": result.get("explanation", ""),
@@ -77,6 +85,35 @@ def serve(
     import uvicorn
 
     uvicorn.run("provenance_agent.api:app", host=host, port=port)
+
+
+@app.command("evaluate-golden")
+def evaluate_golden(
+    manifest: Path = typer.Option(
+        DEFAULT_MANIFEST,
+        exists=True,
+        readable=True,
+        help="Golden-suite manifest.",
+    ),
+) -> None:
+    """Run the deterministic offline golden evaluation suite."""
+    result = run_golden_suite(manifest)
+    typer.echo(json.dumps(result, indent=2, sort_keys=True))
+    if not result["success"]:
+        raise typer.Exit(code=1)
+
+
+@app.command("mcp")
+def mcp_server(
+    transport: Literal["stdio", "sse", "streamable-http"] = typer.Option(
+        "stdio",
+        help="MCP transport.",
+    ),
+) -> None:
+    """Start the normalized MCP interface."""
+    from .mcp_server import run
+
+    run(transport)
 
 
 if __name__ == "__main__":

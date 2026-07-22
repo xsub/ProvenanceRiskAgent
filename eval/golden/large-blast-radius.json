@@ -1,0 +1,34 @@
+{
+  "schema": "edgp.graph.snapshot.v1",
+  "ecosystem": "rpm",
+  "root": "shared-lib==1.0",
+  "stats": {"nodes": 11, "edges": 10},
+  "nodes": [
+    {"id": "shared-lib==1.0", "package": {"name": "shared-lib", "version": "1.0"}},
+    {"id": "app-01==1.0", "package": {"name": "app-01", "version": "1.0"}},
+    {"id": "app-02==1.0", "package": {"name": "app-02", "version": "1.0"}},
+    {"id": "app-03==1.0", "package": {"name": "app-03", "version": "1.0"}},
+    {"id": "app-04==1.0", "package": {"name": "app-04", "version": "1.0"}},
+    {"id": "app-05==1.0", "package": {"name": "app-05", "version": "1.0"}},
+    {"id": "app-06==1.0", "package": {"name": "app-06", "version": "1.0"}},
+    {"id": "app-07==1.0", "package": {"name": "app-07", "version": "1.0"}},
+    {"id": "app-08==1.0", "package": {"name": "app-08", "version": "1.0"}},
+    {"id": "app-09==1.0", "package": {"name": "app-09", "version": "1.0"}},
+    {"id": "app-10==1.0", "package": {"name": "app-10", "version": "1.0"}}
+  ],
+  "edges": [
+    {"source": "app-01==1.0", "target": "shared-lib==1.0", "relation": "depends_on"},
+    {"source": "app-02==1.0", "target": "shared-lib==1.0", "relation": "depends_on"},
+    {"source": "app-03==1.0", "target": "shared-lib==1.0", "relation": "depends_on"},
+    {"source": "app-04==1.0", "target": "shared-lib==1.0", "relation": "depends_on"},
+    {"source": "app-05==1.0", "target": "shared-lib==1.0", "relation": "depends_on"},
+    {"source": "app-06==1.0", "target": "shared-lib==1.0", "relation": "depends_on"},
+    {"source": "app-07==1.0", "target": "shared-lib==1.0", "relation": "depends_on"},
+    {"source": "app-08==1.0", "target": "shared-lib==1.0", "relation": "depends_on"},
+    {"source": "app-09==1.0", "target": "shared-lib==1.0", "relation": "depends_on"},
+    {"source": "app-10==1.0", "target": "shared-lib==1.0", "relation": "depends_on"}
+  ],
+  "rankings": {
+    "mostDependedUpon": [{"package": "shared-lib", "dependents": 10}]
+  }
+}

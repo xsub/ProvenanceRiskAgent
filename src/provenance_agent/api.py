@@ -14,6 +14,7 @@ from .contracts import (
     InvestigationRequest,
     InvestigationResult,
     InvestigationSummary,
+    ReviewDecision,
 )
 from .service import InvestigationService
 from .store import InvestigationStore
@@ -89,6 +90,31 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
     ) -> list[EvidenceRecord]:
         _require_investigation(service, investigation_id)
         return service.list_evidence(investigation_id)
+
+    @app.get("/api/v1/investigations/{investigation_id}/findings")
+    def get_findings(
+        investigation_id: str,
+        service: InvestigationService = Depends(get_service),
+    ) -> list[EvidenceRecord]:
+        _require_investigation(service, investigation_id)
+        return [
+            record
+            for record in service.list_evidence(investigation_id)
+            if record.kind != "verified_fact"
+        ]
+
+    @app.post("/api/v1/investigations/{investigation_id}/review")
+    @app.post("/api/v1/investigations/{investigation_id}/resume")
+    def review_investigation(
+        investigation_id: str,
+        review: ReviewDecision,
+        service: InvestigationService = Depends(get_service),
+    ) -> InvestigationResult:
+        _require_investigation(service, investigation_id)
+        try:
+            return service.resume_investigation(investigation_id, review)
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     return app
 
@@ -203,6 +229,29 @@ def _render_index(examples: list[dict[str, str]]) -> str:
         cursor: progress;
         opacity: .72;
       }}
+      .check {{
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 14px;
+        color: var(--ink);
+      }}
+      .check input {{
+        width: 16px;
+        height: 16px;
+      }}
+      .review-form {{
+        border-top: 1px solid var(--line);
+        margin-top: 18px;
+        padding-top: 16px;
+      }}
+      .review-form input {{
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 10px;
+        font: inherit;
+      }}
       .metrics {{
         display: grid;
         grid-template-columns: repeat(4, minmax(120px, 1fr));
@@ -288,6 +337,10 @@ def _render_index(examples: list[dict[str, str]]) -> str:
           </select>
           <label for="question" style="margin-top:14px">Question</label>
           <textarea id="question" name="question">{escape(DEFAULT_QUESTION)}</textarea>
+          <label class="check" for="pause-before-review">
+            <input id="pause-before-review" name="pause_before_review" type="checkbox">
+            Pause for human review
+          </label>
           <button id="submit" type="submit">Run investigation</button>
         </form>
       </aside>
@@ -320,6 +373,31 @@ def _render_index(examples: list[dict[str, str]]) -> str:
         }}).join("") + "</tr>").join("");
       }}
 
+      function renderList(items) {{
+        if (!items.length) return "<p class='empty'>None</p>";
+        return "<ul>" + items.map((item) => "<li><code>" + text(item) + "</code></li>").join("") + "</ul>";
+      }}
+
+      function reviewPanel(data) {{
+        if (data.status !== "awaiting_review") return "";
+        return `
+          <form id="review-form" class="review-form">
+            <h2>Human Review</h2>
+            <label for="review-decision">Decision</label>
+            <select id="review-decision" name="decision">
+              <option value="DENY">Deny</option>
+              <option value="ALLOW">Allow</option>
+              <option value="UNKNOWN">Unknown</option>
+              <option value="REVIEW">Keep in review</option>
+            </select>
+            <label for="reviewer" style="margin-top:10px">Reviewer</label>
+            <input id="reviewer" name="reviewer" required value="local-reviewer">
+            <label for="rationale" style="margin-top:10px">Rationale</label>
+            <textarea id="rationale" name="rationale" required></textarea>
+            <button type="submit">Submit decision</button>
+          </form>`;
+      }}
+
       function render(data) {{
         const reliability = data.reliability ?? {{}};
         result.className = "";
@@ -336,16 +414,29 @@ def _render_index(examples: list[dict[str, str]]) -> str:
             <tr><th>Version</th><td>${{text(data.artifact?.version)}}</td></tr>
             <tr><th>Digest</th><td><code>${{text(data.artifact?.digest)}}</code></td></tr>
             <tr><th>Schema</th><td><code>${{text(data.source_schema)}}</code></td></tr>
+            <tr><th>Status</th><td><code>${{text(data.status)}}</code></td></tr>
           </tbody></table>
           <h2>Risk Evidence</h2>
           <table>
-            <thead><tr><th>Code</th><th>Finding</th><th>Source</th><th>Weight</th></tr></thead>
-            <tbody>${{renderRows(data.evidence ?? [], ["code", "finding", "source", "weight"])}}</tbody>
+            <thead><tr><th>Evidence ID</th><th>Code</th><th>Finding</th><th>Weight</th></tr></thead>
+            <tbody>${{renderRows(data.evidence ?? [], ["evidence_id", "code", "finding", "weight"])}}</tbody>
           </table>
           <h2>Verified Facts</h2>
           <table>
-            <thead><tr><th>Code</th><th>Finding</th><th>Source</th></tr></thead>
-            <tbody>${{renderRows(data.observations ?? [], ["code", "finding", "source"])}}</tbody>
+            <thead><tr><th>Evidence ID</th><th>Code</th><th>Finding</th></tr></thead>
+            <tbody>${{renderRows(data.observations ?? [], ["evidence_id", "code", "finding"])}}</tbody>
+          </table>
+          <h2>Contradictions</h2>
+          <table>
+            <thead><tr><th>ID</th><th>Code</th><th>Message</th><th>Severity</th></tr></thead>
+            <tbody>${{renderRows(data.contradictions ?? [], ["contradiction_id", "code", "message", "severity"])}}</tbody>
+          </table>
+          <h2>Missing Evidence</h2>
+          ${{renderList(data.missing_evidence ?? [])}}
+          <h2>Policy Rules</h2>
+          <table>
+            <thead><tr><th>Rule</th><th>Status</th><th>Message</th></tr></thead>
+            <tbody>${{renderRows(data.policy_evaluation?.rule_results ?? [], ["rule_id", "status", "message"])}}</tbody>
           </table>
           <h2>Trace</h2>
           <table>
@@ -354,7 +445,26 @@ def _render_index(examples: list[dict[str, str]]) -> str:
           </table>
           <h2>Explanation</h2>
           <pre>${{text(data.explanation)}}</pre>
+          ${{reviewPanel(data)}}
         `;
+        const reviewForm = document.getElementById("review-form");
+        if (reviewForm) {{
+          reviewForm.addEventListener("submit", async (event) => {{
+            event.preventDefault();
+            const reviewResponse = await fetch(`/api/v1/investigations/${{data.investigation_id}}/review`, {{
+              method: "POST",
+              headers: {{"content-type": "application/json"}},
+              body: JSON.stringify({{
+                decision: reviewForm.decision.value,
+                reviewer: reviewForm.reviewer.value,
+                rationale: reviewForm.rationale.value
+              }})
+            }});
+            const reviewed = await reviewResponse.json();
+            if (!reviewResponse.ok) throw new Error(reviewed.detail ?? reviewResponse.statusText);
+            render(reviewed);
+          }});
+        }}
       }}
 
       form.addEventListener("submit", async (event) => {{
@@ -364,7 +474,8 @@ def _render_index(examples: list[dict[str, str]]) -> str:
         result.textContent = "Investigation running...";
         const body = {{
           input_path: form.input_path.value || "{escape(default_input, quote=True)}",
-          question: form.question.value
+          question: form.question.value,
+          pause_before_review: form.pause_before_review.checked
         }};
         try {{
           const response = await fetch("/api/v1/investigations", {{

@@ -1,0 +1,99 @@
+{
+  "schema": "provenance-risk-agent.combined.v1",
+  "artifact": {
+    "name": "demo-conflict",
+    "version": "1.0-1.el9",
+    "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "sources": [
+    {
+      "schema": "albs-provenance-explorer/v1",
+      "nodes": [
+        {
+          "id": "source:demo-conflict",
+          "label": "demo-conflict",
+          "type": "source_package",
+          "metadata": {"name": "demo-conflict"}
+        },
+        {
+          "id": "cas:source",
+          "label": "source CAS",
+          "type": "cas_attestation",
+          "metadata": {"cas_hash": "source-hash", "evidence_present": true}
+        },
+        {
+          "id": "build:100",
+          "label": "ALBS build 100",
+          "type": "build_task",
+          "metadata": {"albs_build_id": "100", "arch": "x86_64"}
+        },
+        {
+          "id": "rpm:demo-conflict",
+          "label": "demo-conflict-1.0-1.el9.x86_64.rpm",
+          "type": "binary_rpm",
+          "metadata": {
+            "name": "demo-conflict",
+            "version": "1.0",
+            "release": "1.el9",
+            "arch": "x86_64",
+            "cas_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        {
+          "id": "cas:artifact",
+          "label": "artifact CAS",
+          "type": "cas_attestation",
+          "metadata": {
+            "cas_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "evidence_present": true
+          }
+        },
+        {
+          "id": "signature:demo",
+          "label": "artifact signature",
+          "type": "signature",
+          "metadata": {"verified": true}
+        },
+        {
+          "id": "release:10",
+          "label": "release 10",
+          "type": "repository_release",
+          "metadata": {"release_id": "10"}
+        }
+      ],
+      "edges": [
+        {"source": "source:demo-conflict", "target": "cas:source", "relation": "authenticated_by"},
+        {"source": "cas:source", "target": "build:100", "relation": "built_by"},
+        {"source": "build:100", "target": "rpm:demo-conflict", "relation": "produces"},
+        {"source": "rpm:demo-conflict", "target": "cas:artifact", "relation": "authenticated_by"},
+        {"source": "rpm:demo-conflict", "target": "signature:demo", "relation": "signed_as"},
+        {"source": "rpm:demo-conflict", "target": "release:10", "relation": "released_to"}
+      ]
+    },
+    {
+      "schema": "edgp.albs.artifact_inventory.v1",
+      "summary": {
+        "artifacts": 1,
+        "binaryRpms": 1,
+        "sourceRpms": 0,
+        "buildTasks": 1,
+        "architectures": 1,
+        "packages": 1
+      },
+      "items": [
+        {
+          "artifactNodeId": "rpm:demo-conflict",
+          "artifactId": "1",
+          "artifactKind": "binary",
+          "artifactArch": "x86_64",
+          "filename": "demo-conflict-1.0-1.el9.x86_64.rpm",
+          "packageName": "demo-conflict",
+          "version": "1.0",
+          "release": "1.el9",
+          "casHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "buildTaskId": "100"
+        }
+      ]
+    }
+  ]
+}

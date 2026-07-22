@@ -36,7 +36,7 @@ evidence and explanation, but not the full raw input export.
 
 - A clean ALBS/EDGP run becomes useful: it shows what evidence was present.
 - Positive facts remain distinct from risk evidence and do not change scoring.
-- The result can be consumed by scripts, CI or future UI code without scraping
+- The result can be consumed by scripts, CI, UI, REST, or MCP without scraping
   Rich-rendered Markdown.
 - This still does not mean "safe to allow"; `ALLOW`, `DENY`, `REVIEW`, or
   `UNKNOWN` remains a policy decision.

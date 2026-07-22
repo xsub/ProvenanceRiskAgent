@@ -58,3 +58,36 @@ def test_api_unknown_investigation_returns_404(tmp_path):
     response = client.get("/api/v1/investigations/not-found")
 
     assert response.status_code == 404
+
+
+def test_api_can_resume_a_persisted_review(tmp_path):
+    client = TestClient(create_app(db_path=tmp_path / "review.sqlite3"))
+    waiting = client.post(
+        "/api/v1/investigations",
+        json={
+            "input_path": "examples/suspicious-build.json",
+            "pause_before_review": True,
+        },
+    )
+
+    assert waiting.status_code == 200
+    payload = waiting.json()
+    assert payload["status"] == "awaiting_review"
+    investigation_id = payload["investigation_id"]
+
+    reviewed = client.post(
+        f"/api/v1/investigations/{investigation_id}/resume",
+        json={
+            "decision": "DENY",
+            "reviewer": "api-test",
+            "rationale": "Evidence confirms denial.",
+        },
+    )
+    findings = client.get(
+        f"/api/v1/investigations/{investigation_id}/findings"
+    )
+
+    assert reviewed.status_code == 200
+    assert reviewed.json()["decision_state"] == "DENY"
+    assert findings.status_code == 200
+    assert all(item["kind"] != "verified_fact" for item in findings.json())

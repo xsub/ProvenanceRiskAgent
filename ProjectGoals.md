@@ -160,14 +160,15 @@ risky, and receive:
   result;
 - no unsupported claims in the golden evaluation harness.
 
-## Current Runnable Slice
+## Current MVP
 
-The current implementation is a deterministic MVP slice with CLI, FastAPI, a
-minimal web UI, Docker Compose packaging, and a SQLite investigation event log.
-It can load JSON exports, normalize supported source contracts, collect
-verified facts, collect risk evidence, compute a deterministic score, assess
-completeness and confidence, produce a decision state, persist execution trace,
-and render Markdown, JSON, or API/UI output.
+The MVP is implemented with CLI, FastAPI, a minimal web UI, Docker Compose,
+MCP, a SQLite investigation event log, and persistent LangGraph checkpoints.
+It normalizes supported source contracts, creates stable evidence IDs and
+source pointers, detects missing and contradictory evidence, computes separate
+risk/completeness/confidence assessments, applies explicit policy rules,
+supports human interrupt/resume, and renders Markdown, JSON, REST, UI, or MCP
+output.
 
 The primary bundled MVP case is `examples/albs-edgp-risk-case.json`. It uses
 the combined fixture schema to evaluate ALBS provenance evidence and EDGP
@@ -186,6 +187,7 @@ Current verification commands:
 ```bash
 .venv/bin/pytest
 .venv/bin/ruff check .
+.venv/bin/provenance-agent evaluate-golden
 ```
 
 Container-first smoke path:
@@ -196,10 +198,11 @@ docker compose up --build
 
 ## MVP Execution Backend Decision
 
-The MVP uses SQLite as the durable investigation event log. This is enough for
-traceability, restart-safe investigation records, evidence persistence, and
-local demo reliability without introducing unnecessary distributed
-infrastructure.
+The MVP uses SQLite for the durable investigation event log and LangGraph
+checkpoints. This is enough for traceability, restart-safe review state,
+evidence persistence, and local demo reliability without introducing
+unnecessary distributed infrastructure. Transient execution failures use a
+bounded retry policy, and every failed attempt is recorded in the event log.
 
 RabbitMQ, Celery, and Redis are deferred extension points:
 
@@ -248,15 +251,14 @@ RabbitMQ, Celery, and Redis are deferred extension points:
 
 ## Open Architectural Questions
 
-- Exact ALBS Provenance Explorer and EDGP JSON export schemas and versions.
-- Whether persisted LangGraph checkpoints should use SQLite or PostgreSQL.
-- The interrupt/resume contract for human review.
 - Exact policy profiles and risk weights for `ALLOW`, `DENY`, `REVIEW`,
   `UNKNOWN`, and `ERROR`.
 - Evaluation data source for real ALBS artifacts and expected evidence.
 - Whether missing SBOM or errata coverage should affect evidence completeness,
   confidence, risk, or only decision routing, and with what weight.
-- MCP transport choice for the first demonstrator.
 - Packaging strategy for optional ALBS/EDGP process adapters.
+- When SQLite checkpoints should move to PostgreSQL for concurrent users.
+- Whether MCP streamable HTTP should be co-hosted with REST; the MVP defaults
+  to stdio and also supports standalone SSE or streamable HTTP.
 - When to introduce Redis, RabbitMQ/Celery, or another worker backend after the
   SQLite event log proves insufficient for concurrency or retry needs.

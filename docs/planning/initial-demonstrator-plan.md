@@ -2,7 +2,7 @@
 
 ## Status
 
-Reviewed planning baseline.
+Implemented planning baseline.
 
 Date: 2026-07-21.
 
@@ -19,12 +19,13 @@ Current shape:
 - Python package `provenance-risk-agent` with Typer CLI entry point
   `provenance-agent`.
 - LangGraph workflow in `src/provenance_agent/workflow.py` with explicit
-  nodes for load, observation collection, evidence collection, scoring,
-  conditional review routing, explanation, and report rendering.
+  nodes for load, observation/evidence collection, contradiction detection,
+  risk, completeness, confidence, policy, decision, persistent review,
+  explanation, and report rendering.
 - LangChain tools in `src/provenance_agent/tools.py` act as deterministic,
   typed boundaries over normalized exports.
-- Pydantic models in `src/provenance_agent/models.py` currently cover simple
-  artifact/build/dependency/vulnerability/policy records and evidence facts.
+- Pydantic contracts cover artifacts, evidence pointers, risk, completeness,
+  confidence, policy, contradictions, decisions, reviews, and traces.
 - `src/provenance_agent/normalization.py` accepts:
   - `provenance-risk-agent.simple.v1`
   - `albs-provenance-explorer/v1`
@@ -33,23 +34,18 @@ Current shape:
   - `edgp.graph.snapshot.v1`
 - Existing ADRs record deterministic evidence first, untrusted model input,
   real ALBS/EDGP input contracts, and coverage reporting.
-- Existing tests verify deterministic CLI/workflow paths and local ALBS/EDGP
-  fixture compatibility.
+- Tests verify CLI/workflow paths, SQLite persistence, interrupt/resume, REST,
+  MCP, golden scenarios, and local ALBS/EDGP fixture compatibility.
 
-Gaps against the project brief:
+Implementation outcome:
 
-- FastAPI service, minimal web UI, Dockerfile, Compose setup, and SQLite
-  investigation event log are now present in the first MVP slice.
-- MCP interface is still pending.
-- Risk score, risk level, human-review flag, and verified facts exist, but
-  decision state, evidence completeness, confidence, contradictions, policy
-  profiles, and trace schema are not yet first-class contracts.
-- Current workflow analyzes one export at a time. The first vertical slice
-  must combine ALBS provenance evidence and EDGP dependency/vulnerability or
-  impact evidence for one question.
-- Current adapter boundary is file-based JSON only. It should remain for the
-  demonstrator, but the plan must leave room for process, HTTP, SQLite, or
-  library adapters later.
+- FastAPI, web UI, Docker Compose, SQLite event log and checkpoints are present.
+- MCP exposes ten normalized capabilities over the deterministic workflow.
+- Risk, completeness, confidence, contradictions, policy, decision and trace
+  are first-class Pydantic contracts.
+- The primary vertical slice combines ALBS and EDGP evidence in one result.
+- The MVP adapter boundary remains file-based JSON; process, HTTP, SQLite or
+  library adapters remain post-MVP extension points.
 
 ### ALBS Provenance Explorer
 
@@ -169,8 +165,7 @@ Recommended initial packaging:
 Trade-off:
 
 - Compose is slightly heavier for the user, but it gives a clean extension
-  point for future checkpointer storage, persistent run state, and optional
-  sidecar engines.
+  point for PostgreSQL persistence and optional sidecar engines.
 - A single image is simpler to run, but premature for the first slice if the app
   still needs to validate how ALBS/EDGP engine adapters are packaged.
 
@@ -382,9 +377,9 @@ Initial endpoints:
 - `POST /api/v1/investigations/{id}/resume`
 - `POST /api/v1/investigations/{id}/approve`
 
-For the first demonstrator, investigation state is stored in SQLite as a
-durable event log. A future persistent LangGraph checkpointer can reuse SQLite
-or move to PostgreSQL when interrupt/resume workflows become first-class.
+Investigation state is stored in SQLite as a durable event log, with a separate
+SQLite LangGraph checkpointer for persistent interrupt/resume. PostgreSQL
+remains an extension when concurrent multi-user operation requires it.
 
 ## 8. Minimal Vertical Slice
 
@@ -500,12 +495,13 @@ Risks:
 Unresolved decisions:
 
 - Exact default policy profile and risk weights for ALLOW/DENY/REVIEW.
-- Whether future LangGraph checkpoints should stay on SQLite or move to
+- Which concurrency threshold should trigger a move from SQLite checkpoints to
   PostgreSQL.
 - Whether Redis, RabbitMQ/Celery, or another worker backend becomes necessary
   after the SQLite event log proves insufficient for concurrency, progress
   streaming, or durable background execution.
-- Whether MCP uses streamable HTTP, stdio, or both in the demonstrator image.
+- Whether streamable HTTP MCP should later be co-hosted with REST; the MVP uses
+  stdio by default and supports standalone SSE or streamable HTTP.
 - Whether process adapters should invoke upstream CLIs in stage 2 or wait until
   the JSON fixture path is complete.
 - Which EDGP fixture should be the first authoritative vulnerability/impact

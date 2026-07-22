@@ -61,7 +61,8 @@ For this MVP, the first reliability requirement is traceability:
 
 That is why the first persistence layer is a SQLite investigation event log.
 It is small, inspectable, easy to run in a container, and sufficient for
-restart-safe demo records.
+restart-safe demo records. A separate SQLite LangGraph checkpointer now stores
+paused workflow state.
 
 ## 4. Event Log Versus Queue
 
@@ -76,7 +77,7 @@ introducing a broker.
 RabbitMQ and Celery become useful when the system must execute many
 long-running investigations in background workers, recover unfinished jobs
 after process crashes, or distribute work across machines. That is a real
-future need, but it is not necessary for the first vertical slice.
+future need, but it is not necessary for the measured MVP workload.
 
 Redis becomes useful for different reasons: cache, live progress pub/sub,
 short-lived locks, rate limiting, or as a broker for lightweight worker
@@ -86,19 +87,27 @@ The trade-off is intentional: the MVP optimizes for clarity and correctness.
 Execution infrastructure can be introduced later behind stable service and
 store interfaces.
 
-## 5. Current Vertical Slice
+## 5. Implemented MVP
 
 The implemented slice now contains:
 
-- Pydantic contracts for requests, results, reliability, events, evidence, and
-  investigation summaries.
+- Pydantic contracts for requests, results, risk, completeness, confidence,
+  policy, contradictions, reviews, events, evidence, and summaries.
+- Stable evidence IDs and source pointers.
+- Dedicated deterministic modules for policy, risk, completeness, confidence,
+  contradiction detection, and decision routing.
 - A service layer that runs the LangGraph workflow and persists the result.
-- A SQLite store for investigations, ordered events, and evidence records.
+- A SQLite store for investigations, ordered events, evidence records, and a
+  separate SQLite checkpointer for review interrupts.
 - FastAPI endpoints for health, readiness, examples, evaluation,
-  investigations, events, and evidence.
-- A minimal web UI served by the app.
+  investigations, events, evidence, findings, and review resumption.
+- A minimal web UI that displays policy, missing evidence, contradictions,
+  stable IDs, trace, and human-review controls.
+- Ten MCP tools over the same deterministic graph used by REST and CLI.
+- A ten-case offline golden evaluation suite.
 - Dockerfile and Docker Compose packaging.
-- Tests for CLI, workflow, service persistence, and API contracts.
+- Tests for CLI, workflow, service persistence, checkpoints, API, MCP, and the
+  golden harness.
 
 The primary bundled example is `examples/albs-edgp-risk-case.json`. It is a
 small combined fixture that contains ALBS provenance evidence and EDGP
@@ -107,9 +116,9 @@ MVP self-contained while preserving the future adapter boundary: later, the
 same combined result can be assembled from live ALBS/EDGP CLI, HTTP, SQLite, or
 library adapters.
 
-This is not the full product. It is the first runnable backbone that lets the
-project grow without losing the core rule: every material conclusion must be
-traceable to evidence.
+This is a complete local MVP, not a production service. It provides the
+backbone for future live adapters without losing the core rule: every material
+conclusion must be traceable to evidence.
 
 ## 6. Reliability Model
 
@@ -143,22 +152,109 @@ services:
 Each addition should be justified by a concrete product need rather than added
 because it is common in production architectures.
 
-## 8. Next Learning Steps
+## 8. Stable Evidence Identity
 
-The next MVP steps should deepen the evidence model before expanding
-infrastructure:
+The first extension gives each verified fact and risk finding a stable ID. The
+ID is derived from the record kind, code, source schema, record path, and stable
+artifact identity. The absolute file path is deliberately excluded, so moving
+the same export does not change its evidence identity.
 
-1. Give evidence records stable IDs and source pointers.
-2. Split policy, risk, completeness, and confidence into dedicated modules.
-3. Add contradiction detection across ALBS and EDGP sources.
-4. Add golden fixtures for missing signatures, unknown builders, unresolved
-   vulnerabilities, incomplete provenance, malformed data, and prompt
-   injection.
-5. Add a LangGraph interrupt/resume path for human review.
-6. Decide whether SQLite remains enough for checkpoints or whether PostgreSQL
-   is needed.
-7. Introduce Redis or RabbitMQ/Celery only when concurrent background
-   investigations or live progress require them.
+A source pointer records the source system, schema, file, record path, and
+artifact subject. This choice increases payload size, but it makes a finding
+independently reviewable and prevents reports from depending on prose alone.
+The trade-off is that source adapters must expose record-level paths rather
+than returning unstructured summaries.
+
+## 9. Separating Analytical Dimensions
+
+Risk, completeness, and confidence were moved into independent modules because
+they answer different questions. Risk asks what adverse findings exist.
+Completeness asks whether required categories were inspected. Confidence asks
+how strongly the available and internally consistent evidence supports the
+result.
+
+This separation changes the semantics of a clean result. Zero risk with weak
+coverage is no longer equivalent to safety. The decision module can return
+`UNKNOWN` when completeness or confidence is too low, even if no risk finding
+was emitted. The policy module remains an explicit rulebook and records each
+rule result separately from the final decision.
+
+## 10. Cross-Source Contradictions
+
+Combined ALBS and EDGP exports may disagree about artifact name, version,
+digest, build ID, release ID, or signature state. The contradiction detector
+normalizes comparable values, groups claims by category, and emits a stable
+contradiction record when distinct values remain.
+
+Contradictions reduce confidence and route the result to `REVIEW`. They do not
+silently choose one source as authoritative because that hierarchy has not been
+established by policy. This is conservative: it can create extra review work,
+but it avoids laundering inconsistent evidence into a precise-looking verdict.
+
+## 11. Human Review as Workflow State
+
+A review requirement is now represented by LangGraph `interrupt()`. The graph
+stores state in SQLite, returns an interrupt ID and proposed deterministic
+decision, and resumes only after receiving a typed reviewer decision and
+rationale. The proposed decision remains visible after resume, so human action
+does not erase what the rules originally concluded.
+
+SQLite was selected because the MVP is local and single-service. PostgreSQL
+would improve concurrent write behavior and operational tooling, but it would
+add deployment cost before concurrency is measured. The checkpoint interface
+keeps that migration possible without changing policy semantics.
+
+## 12. Bounded Retry Without a Broker
+
+Transient `TimeoutError`, connection, and operating-system failures use a
+bounded retry policy with exponential delay. Each failed attempt is persisted
+as an investigation event. Validation errors are not retried because repeating
+an invalid contract cannot repair it.
+
+This is intentionally narrower than durable background-job recovery. If jobs
+must survive process termination between attempts or run across workers,
+RabbitMQ/Celery or another durable execution system becomes justified. Until
+that requirement is measured, SQLite remains the source of truth and the retry
+loop remains small and inspectable.
+
+## 13. Golden Evaluation as an Executable Argument
+
+The golden suite contains ten representative cases: clean signed input,
+missing signature, unknown builder, unresolved vulnerability, incomplete
+provenance, contradictory identity, large blast radius, timeout exhaustion,
+malformed data, and prompt injection in metadata.
+
+Each case checks decision correctness, expected evidence, missing categories,
+contradictions, stable IDs, source pointers, bounded duration, unsupported
+terms, and trace presence where applicable. This does not prove production
+security. It does provide a repeatable falsification surface: a future change
+that violates one of these properties fails locally without private services
+or an LLM provider.
+
+## 14. MCP Without Duplicate Semantics
+
+The MCP server exposes normalized capabilities, but every analytical tool calls
+the same workflow and source contracts as CLI and REST. This avoids a common
+integration failure where each delivery surface develops its own scoring or
+policy interpretation.
+
+The default transport is stdio because it has the smallest local deployment
+and authentication surface. Standalone SSE and streamable HTTP remain
+available. Co-hosting network MCP with REST is deferred until deployment and
+authorization requirements are explicit.
+
+## 15. Validation and Remaining Uncertainty
+
+The implementation is validated by unit and integration tests, the golden
+suite, real local ALBS PIW fixture generation, EDGP schema validation, agent
+execution over both source projects, container build and internal API smoke
+tests, and responsive browser checks.
+
+The remaining uncertainty is production-shaped: live feed freshness,
+authoritative advisory coverage, concurrent users, process-level recovery, and
+governed real-world evaluation data. These are the conditions that may justify
+PostgreSQL, telemetry, Redis, or a distributed queue. Infrastructure should
+enter only with a measurable failure mode and an acceptance test.
 
 The academic habit to preserve is simple: every new component should answer
 which uncertainty it reduces, which failure mode it handles, and how it keeps

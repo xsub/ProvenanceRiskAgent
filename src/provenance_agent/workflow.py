@@ -1,71 +1,150 @@
 from __future__ import annotations
 
+import json
 from functools import partial
-from langgraph.graph import END, START, StateGraph
+from typing import Any
 
+from langgraph.graph import END, START, StateGraph
+from langgraph.types import interrupt
+
+from .completeness import assess_completeness
+from .confidence import assess_confidence
+from .contracts import (
+    CompletenessAssessment,
+    ConfidenceAssessment,
+    Contradiction,
+    RiskAssessment,
+)
+from .contradictions import detect_contradictions
+from .decision import decide
+from .evidence import enrich_record
 from .explainer import deterministic_explanation, llm_explanation
 from .models import AnalysisState
+from .normalization import SIMPLE_SCHEMA
+from .policy import evaluate_policy
 from .repository import load_export
+from .risk import assess_risk
 from .tools import EVIDENCE_TOOLS, OBSERVATION_TOOLS, expand_tool_exports
 
 
-def load_node(state: AnalysisState) -> dict:
+def load_node(state: AnalysisState) -> dict[str, Any]:
     export = load_export(state["input_path"])
     return {"export": export}
 
 
-def collect_evidence_node(state: AnalysisState) -> dict:
+def collect_evidence_node(state: AnalysisState) -> dict[str, Any]:
     # LangChain tools are typed boundaries. The graph decides when they run.
-    evidence: list[dict] = []
+    evidence: list[dict[str, Any]] = []
     for tool_export in expand_tool_exports(state["export"]):
-        export_json = __import__("json").dumps(tool_export)
+        export_json = json.dumps(tool_export)
         for evidence_tool in EVIDENCE_TOOLS:
             result = evidence_tool.invoke({"export_json": export_json})
-            evidence.extend(result)
+            evidence.extend(
+                enrich_record(item, export=tool_export, kind="risk_evidence")
+                for item in result
+            )
     return {"evidence": evidence}
 
 
-def collect_observations_node(state: AnalysisState) -> dict:
-    observations: list[dict] = []
+def collect_observations_node(state: AnalysisState) -> dict[str, Any]:
+    observations: list[dict[str, Any]] = []
     for tool_export in expand_tool_exports(state["export"]):
-        export_json = __import__("json").dumps(tool_export)
+        export_json = json.dumps(tool_export)
         for observation_tool in OBSERVATION_TOOLS:
             result = observation_tool.invoke({"export_json": export_json})
-            observations.extend(result)
+            observations.extend(
+                enrich_record(item, export=tool_export, kind="verified_fact")
+                for item in result
+            )
     return {"observations": observations}
 
 
-def score_node(state: AnalysisState) -> dict:
-    score = min(100, sum(item["weight"] for item in state["evidence"]))
-    if score >= 75:
-        level = "critical"
-    elif score >= 50:
-        level = "high"
-    elif score >= 25:
-        level = "medium"
-    elif score > 0:
-        level = "low"
-    else:
-        level = "none"
+def detect_contradictions_node(state: AnalysisState) -> dict[str, Any]:
+    contradictions = detect_contradictions(state["export"])
     return {
-        "risk_score": score,
-        "risk_level": level,
-        "requires_review": score >= 50,
+        "contradictions": [item.model_dump(mode="json") for item in contradictions]
     }
 
 
-def review_node(state: AnalysisState) -> dict:
-    # Learning-stage placeholder. Production version should call
-    # langgraph.types.interrupt() and resume after a human decision.
+def risk_node(state: AnalysisState) -> dict[str, Any]:
+    risk = assess_risk(state.get("evidence", []))
     return {
-        "explanation": (
-            "HUMAN REVIEW REQUIRED. "
-            + deterministic_explanation(state)
-        )
+        "risk": risk.model_dump(mode="json"),
+        "risk_score": risk.score,
+        "risk_level": risk.level,
     }
 
 
-def explain_node(state: AnalysisState, model_name: str | None) -> dict:
+def completeness_node(state: AnalysisState) -> dict[str, Any]:
+    completeness = assess_completeness(
+        state["export"],
+        _contradictions(state),
+    )
+    return {"completeness": completeness.model_dump(mode="json")}
+
+
+def confidence_node(state: AnalysisState) -> dict[str, Any]:
+    confidence = assess_confidence(
+        CompletenessAssessment.model_validate(state["completeness"]),
+        _contradictions(state),
+        compatibility_fixture=state["export"]["source_schema"] == SIMPLE_SCHEMA,
+    )
+    return {"confidence": confidence.model_dump(mode="json")}
+
+
+def policy_node(state: AnalysisState) -> dict[str, Any]:
+    evaluation = evaluate_policy(
+        risk=RiskAssessment.model_validate(state["risk"]),
+        completeness=CompletenessAssessment.model_validate(state["completeness"]),
+        contradictions=_contradictions(state),
+    )
+    return {"policy_evaluation": evaluation.model_dump(mode="json")}
+
+
+def decision_node(state: AnalysisState) -> dict[str, Any]:
+    proposed = decide(
+        risk=RiskAssessment.model_validate(state["risk"]),
+        completeness=CompletenessAssessment.model_validate(state["completeness"]),
+        confidence=ConfidenceAssessment.model_validate(state["confidence"]),
+        contradictions=_contradictions(state),
+    )
+    return {
+        "proposed_decision": proposed,
+        "decision_state": proposed,
+        "requires_review": proposed == "REVIEW",
+    }
+
+
+def review_node(
+    state: AnalysisState,
+    *,
+    interrupt_reviews: bool,
+) -> dict[str, Any]:
+    if not interrupt_reviews:
+        return {}
+    response = interrupt(
+        {
+            "reason": "Policy evaluation requires a human decision.",
+            "proposed_decision": state["proposed_decision"],
+            "risk_score": state["risk_score"],
+            "evidence_ids": [
+                item["evidence_id"]
+                for item in state.get("evidence", [])
+                if item.get("evidence_id")
+            ],
+            "contradiction_ids": [
+                item["contradiction_id"]
+                for item in state.get("contradictions", [])
+            ],
+        }
+    )
+    return {
+        "human_review": response,
+        "decision_state": str(response["decision"]),
+    }
+
+
+def explain_node(state: AnalysisState, model_name: str | None) -> dict[str, Any]:
     if model_name:
         explanation = llm_explanation(state, model_name)
     else:
@@ -73,13 +152,19 @@ def explain_node(state: AnalysisState, model_name: str | None) -> dict:
     return {"explanation": explanation}
 
 
-def render_node(state: AnalysisState) -> dict:
+def render_node(state: AnalysisState) -> dict[str, Any]:
     artifact = state["export"]["artifact"]
+    completeness = CompletenessAssessment.model_validate(state["completeness"])
+    confidence = ConfidenceAssessment.model_validate(state["confidence"])
     lines = [
         f"# Provenance risk report: {artifact['name']}",
         "",
         f"- Source schema: `{state['export']['source_schema']}`",
+        f"- Decision: **{state['decision_state']}**",
+        f"- Proposed decision: **{state['proposed_decision']}**",
         f"- Risk: **{state['risk_level']}** ({state['risk_score']}/100)",
+        f"- Completeness: **{completeness.score}%**",
+        f"- Confidence: **{confidence.level}** ({confidence.score}%)",
         f"- Human review: {'required' if state['requires_review'] else 'not required'}",
         "",
         "## Verified Facts",
@@ -89,50 +174,92 @@ def render_node(state: AnalysisState) -> dict:
     if artifact.get("digest"):
         lines.insert(4 if artifact.get("version") else 3, f"- Digest: `{artifact['digest']}`")
     if state.get("observations"):
-        for item in state["observations"]:
-            lines.append(
-                f"- `{item['code']}`: {item['finding']} "
-                f"[source: {item['source']}]"
-            )
+        lines.extend(_record_line(item) for item in state["observations"])
     else:
         lines.append("- No verified facts recorded.")
+
     lines += ["", "## Risk Evidence"]
-    if state["evidence"]:
-        for item in state["evidence"]:
-            lines.append(
-                f"- `{item['code']}` (+{item['weight']}): {item['finding']} "
-                f"[source: {item['source']}]"
-            )
+    if state.get("evidence"):
+        lines.extend(_record_line(item, include_weight=True) for item in state["evidence"])
     else:
-        lines.append("- No findings.")
+        lines.append("- No risk-raising findings.")
+
+    lines += ["", "## Contradictions"]
+    if state.get("contradictions"):
+        lines.extend(
+            f"- `{item['contradiction_id']}` `{item['code']}`: {item['message']}"
+            for item in state["contradictions"]
+        )
+    else:
+        lines.append("- No cross-source contradictions detected.")
+
+    lines += ["", "## Missing Evidence"]
+    if completeness.missing_categories:
+        lines.extend(f"- `{category}`" for category in completeness.missing_categories)
+    else:
+        lines.append("- None.")
     lines += ["", "## Explanation", "", state["explanation"]]
     return {"report": "\n".join(lines)}
 
 
-def route_after_score(state: AnalysisState) -> str:
+def route_after_decision(state: AnalysisState) -> str:
     return "review" if state["requires_review"] else "explain"
 
 
-def build_graph(model_name: str | None = None):
+def build_graph(
+    model_name: str | None = None,
+    *,
+    checkpointer: Any | None = None,
+    interrupt_reviews: bool = False,
+):
     builder = StateGraph(AnalysisState)
     builder.add_node("load", load_node)
     builder.add_node("collect_observations", collect_observations_node)
     builder.add_node("collect_evidence", collect_evidence_node)
-    builder.add_node("score", score_node)
-    builder.add_node("review", review_node)
+    builder.add_node("detect_contradictions", detect_contradictions_node)
+    builder.add_node("assess_risk", risk_node)
+    builder.add_node("assess_completeness", completeness_node)
+    builder.add_node("assess_confidence", confidence_node)
+    builder.add_node("evaluate_policy", policy_node)
+    builder.add_node("decide", decision_node)
+    builder.add_node(
+        "review",
+        partial(review_node, interrupt_reviews=interrupt_reviews),
+    )
     builder.add_node("explain", partial(explain_node, model_name=model_name))
     builder.add_node("render", render_node)
 
     builder.add_edge(START, "load")
     builder.add_edge("load", "collect_observations")
     builder.add_edge("collect_observations", "collect_evidence")
-    builder.add_edge("collect_evidence", "score")
+    builder.add_edge("collect_evidence", "detect_contradictions")
+    builder.add_edge("detect_contradictions", "assess_risk")
+    builder.add_edge("assess_risk", "assess_completeness")
+    builder.add_edge("assess_completeness", "assess_confidence")
+    builder.add_edge("assess_confidence", "evaluate_policy")
+    builder.add_edge("evaluate_policy", "decide")
     builder.add_conditional_edges(
-        "score",
-        route_after_score,
+        "decide",
+        route_after_decision,
         {"review": "review", "explain": "explain"},
     )
-    builder.add_edge("review", "render")
+    builder.add_edge("review", "explain")
     builder.add_edge("explain", "render")
     builder.add_edge("render", END)
-    return builder.compile()
+    return builder.compile(checkpointer=checkpointer)
+
+
+def _contradictions(state: AnalysisState) -> list[Contradiction]:
+    return [
+        Contradiction.model_validate(item)
+        for item in state.get("contradictions", [])
+    ]
+
+
+def _record_line(item: dict[str, Any], *, include_weight: bool = False) -> str:
+    weight = f" (+{item['weight']})" if include_weight else ""
+    record_path = item.get("source_pointer", {}).get("record_path", item["source"])
+    return (
+        f"- `{item['evidence_id']}` `{item['code']}`{weight}: {item['finding']} "
+        f"[source: {record_path}]"
+    )

@@ -25,6 +25,18 @@ Run linting:
 ruff check .
 ```
 
+Run the ten-case deterministic evaluation:
+
+```bash
+provenance-agent evaluate-golden
+```
+
+Inspect the MCP contract:
+
+```bash
+provenance-agent mcp --transport stdio
+```
+
 Run the deterministic CLI path:
 
 ```bash
@@ -68,16 +80,23 @@ The current local harness can verify:
 - JSON export loading and validation.
 - Deterministic evidence extraction.
 - Deterministic risk scoring.
-- LangGraph routing between explanation and review paths.
+- Stable evidence IDs and source pointers.
+- Separate risk, completeness, confidence, and policy results.
+- Cross-source contradiction detection.
+- Persistent LangGraph interrupt/resume behavior.
+- Bounded retry exhaustion and attempt traces.
 - ALBS Provenance Explorer graph export support.
 - EDGP RPM-to-ALBS provenance report support.
 - EDGP ALBS artifact inventory report support.
 - Operational coverage facts in reports.
 - JSON output for programmatic consumption.
+- REST/MCP deterministic result agreement.
+- Ten offline golden scenarios, including malformed and hostile metadata.
+- Container build, health/readiness, and combined ALBS/EDGP evaluation.
 
-The current local harness does not yet verify:
+The current local harness does not claim to verify:
 
-- Persistent LangGraph checkpointing.
-- Human interrupt/resume behavior.
-- Prompt-injection hardening against hostile package metadata.
-- Production ALBS feed coverage beyond the local demo export.
+- production ALBS feed coverage beyond local exports;
+- live advisory freshness or production CVE completeness;
+- multi-process checkpoint concurrency or distributed worker recovery;
+- model-provider behavior when optional LLM narration is enabled.

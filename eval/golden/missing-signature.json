@@ -1,0 +1,20 @@
+{
+  "artifact": {
+    "name": "demo-missing-signature",
+    "version": "1.0-1.el9",
+    "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "build": {
+    "builder": "albs",
+    "signed": false,
+    "reproducible": true,
+    "source_commit": "1111111"
+  },
+  "dependencies": [],
+  "vulnerabilities": [],
+  "policy": {
+    "allowed_builders": ["albs"],
+    "require_signature": true,
+    "require_reproducible": true
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schema": "albs-provenance-explorer/v1",
+  "nodes": [
+    {
+      "id": "rpm:orphan",
+      "label": "orphan-1.0-1.el9.x86_64.rpm",
+      "type": "binary_rpm",
+      "metadata": {
+        "name": "orphan",
+        "version": "1.0",
+        "release": "1.el9",
+        "arch": "x86_64"
+      }
+    }
+  ],
+  "edges": []
+}

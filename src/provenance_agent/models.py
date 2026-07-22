@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, TypedDict
+from typing import Any, Literal, TypedDict
 from pydantic import BaseModel, Field
 
 
@@ -47,16 +47,20 @@ class ProvenanceExport(BaseModel):
 
 
 class Evidence(BaseModel):
+    evidence_id: str = ""
     code: str
     finding: str
     weight: int
     source: str
+    source_pointer: dict[str, Any] = Field(default_factory=dict)
 
 
 class Observation(BaseModel):
+    evidence_id: str = ""
     code: str
     finding: str
     source: str
+    source_pointer: dict[str, Any] = Field(default_factory=dict)
 
 
 class AnalysisState(TypedDict, total=False):
@@ -64,8 +68,16 @@ class AnalysisState(TypedDict, total=False):
     export: dict
     observations: list[dict]
     evidence: list[dict]
+    contradictions: list[dict]
+    risk: dict
+    completeness: dict
+    confidence: dict
+    policy_evaluation: dict
     risk_score: int
     risk_level: str
     requires_review: bool
+    proposed_decision: str
+    decision_state: str
+    human_review: dict
     explanation: str
     report: str
