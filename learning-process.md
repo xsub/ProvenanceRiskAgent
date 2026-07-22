@@ -106,8 +106,9 @@ The implemented slice now contains:
 - Ten MCP tools over the same deterministic graph used by REST and CLI.
 - A ten-case offline golden evaluation suite.
 - Dockerfile and Docker Compose packaging.
-- Tests for CLI, workflow, service persistence, checkpoints, API, MCP, and the
-  golden harness.
+- Tests for CLI, workflow, service persistence, checkpoints, API, MCP, retry
+  semantics, review transitions, and the golden harness.
+- A GitHub Actions quality gate across Python 3.11, 3.12, and 3.13.
 
 The primary bundled example is `examples/albs-edgp-risk-case.json`. It is a
 small combined fixture that contains ALBS provenance evidence and EDGP
@@ -267,3 +268,42 @@ enter only with a measurable failure mode and an acceptance test.
 The academic habit to preserve is simple: every new component should answer
 which uncertainty it reduces, which failure mode it handles, and how it keeps
 the final verdict reviewable.
+
+## 16. Continuous Integration as Executable Documentation
+
+This implementation step turns local verification commands into a hosted
+quality gate. CI is not merely build automation here; it is an executable form
+of the project's compatibility and determinism claims. The workflow runs Ruff,
+the full pytest suite, and the golden evaluation on every supported Python
+minor version from 3.11 through 3.13.
+
+The added retry tests distinguish three failure classes. A transient adapter
+failure receives a finite number of attempts with exponential delays. Retry
+exhaustion preserves every attempt and the root cause. Contract or validation
+errors bypass retry because repetition cannot make malformed evidence valid.
+API tests also enforce that a persisted review transition is single-use: once
+completed, a second resume request is a conflict rather than a second verdict.
+
+The trade-off is that hosted CI uses bundled, deterministic fixtures and cannot
+prove live ALBS/EDGP service availability or advisory freshness. Tests against
+the sibling source repositories remain optional local integration checks and
+skip when those repositories are absent. This separation keeps CI reproducible
+without overstating what it validates.
+
+Keeping the workflow matrix small is deliberate. Python 3.11 is the declared
+minimum and 3.12-3.13 detect compatibility drift in current runtimes. Container
+smoke testing remains a separate local gate because rebuilding the complete
+image on every matrix leg would duplicate cost without adding independent
+evidence about the deterministic core.
+
+The local validation run on 2026-07-22 produced 34 passing pytest cases, a
+clean Ruff result, and 10/10 passing golden scenarios. Pytest also exposed one
+non-fatal deprecation warning at the Starlette/httpx TestClient boundary. It is
+recorded rather than suppressed so a future dependency upgrade can remove it
+without weakening warning visibility.
+
+The workflow's own dependencies are part of the same supply-chain argument.
+Official `checkout` and `setup-python` releases are pinned to complete commit
+SHAs rather than mutable major-version tags, while comments retain their human
+readable release numbers. This reduces tag-retargeting risk at the cost of
+requiring an explicit reviewed update when a new action release is adopted.

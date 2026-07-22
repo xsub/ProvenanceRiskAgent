@@ -477,7 +477,7 @@ Metrics to record per golden case:
 - Latency and tool-call count.
 - Final-answer grounding.
 
-## 10. Risks and Unresolved Decisions
+## 10. Current Constraints and Post-MVP Decisions
 
 Risks:
 
@@ -492,9 +492,10 @@ Risks:
 - Model-generated explanations can still overstate evidence unless the prompt,
   output schema, and tests are strict.
 
-Unresolved decisions:
+Post-MVP decisions:
 
-- Exact default policy profile and risk weights for ALLOW/DENY/REVIEW.
+- Governance, versioning, and calibration of the implemented default policy
+  profile and risk weights.
 - Which concurrency threshold should trigger a move from SQLite checkpoints to
   PostgreSQL.
 - Whether Redis, RabbitMQ/Celery, or another worker backend becomes necessary
@@ -502,23 +503,28 @@ Unresolved decisions:
   streaming, or durable background execution.
 - Whether streamable HTTP MCP should later be co-hosted with REST; the MVP uses
   stdio by default and supports standalone SSE or streamable HTTP.
-- Whether process adapters should invoke upstream CLIs in stage 2 or wait until
-  the JSON fixture path is complete.
-- Which EDGP fixture should be the first authoritative vulnerability/impact
-  evidence source for the negative vertical slice.
+- How live process, HTTP, SQLite, or library adapters should invoke the upstream
+  engines while preserving the normalized evidence contract.
+- Which production-governed EDGP source should become authoritative for
+  vulnerability and impact evidence.
 - How to version and publish bundled fixture provenance.
 
-Assumptions:
+Validated MVP assumptions:
 
 - The first demonstrator can use curated local fixtures and still satisfy the
   "integration of both existing engines" requirement if each fixture is traced
   to ALBS/EDGP source contracts.
-- Broad implementation should wait for review of this plan, but narrow doc,
-  contract, and test scaffolding changes are acceptable.
+- Bundled fixtures are sufficient for deterministic regression tests, but not
+  for claims about live feed freshness or production coverage.
 
 ## 11. Ordered Implementation Stages
 
-### Stage 1: Planning and Contract Baseline
+All ten stages below are complete for the local MVP. The file lists retain the
+original planning shape; the implementation sometimes consolidated proposed
+adapter or web modules into the existing normalization, tool, workflow, and API
+boundaries.
+
+### Stage 1: Planning and Contract Baseline - complete
 
 Create or update:
 
@@ -532,7 +538,7 @@ Acceptance criteria:
   criteria.
 - No broad implementation is introduced before review.
 
-### Stage 2: Domain Contracts and Fixture Catalog
+### Stage 2: Domain Contracts and Fixture Catalog - complete
 
 Create or update:
 
@@ -549,7 +555,7 @@ Acceptance criteria:
 - Bundled examples declare source schemas and provenance of fixture data.
 - Existing CLI tests still pass.
 
-### Stage 3: Adapter Layer
+### Stage 3: Adapter Layer - complete
 
 Create or update:
 
@@ -564,7 +570,7 @@ Acceptance criteria:
 - Adapter failures return typed partial errors.
 - No LLM is needed for adapter tests.
 
-### Stage 4: Policy, Risk, Completeness, Confidence
+### Stage 4: Policy, Risk, Completeness, Confidence - complete
 
 Create or update:
 
@@ -584,7 +590,7 @@ Acceptance criteria:
 - Missing evidence does not silently become low risk.
 - Contradictory evidence routes to `REVIEW` or `UNKNOWN`.
 
-### Stage 5: LangGraph Vertical Slice
+### Stage 5: LangGraph Vertical Slice - complete
 
 Create or update:
 
@@ -599,7 +605,7 @@ Acceptance criteria:
 - Result includes evidence IDs for material conclusions.
 - Deterministic mode works without an LLM provider.
 
-### Stage 6: FastAPI Service
+### Stage 6: FastAPI Service - complete
 
 Create or update:
 
@@ -615,7 +621,7 @@ Acceptance criteria:
   state.
 - API schemas match Pydantic contracts.
 
-### Stage 7: Minimal Web UI
+### Stage 7: Minimal Web UI - complete
 
 Create or update:
 
@@ -631,7 +637,7 @@ Acceptance criteria:
 - No complex frontend framework is introduced unless plain server-rendered HTML
   proves insufficient.
 
-### Stage 8: MCP Interface
+### Stage 8: MCP Interface - complete
 
 Create or update:
 
@@ -645,7 +651,7 @@ Acceptance criteria:
 - MCP result for the vertical slice matches REST deterministic output.
 - MCP transport choice is documented.
 
-### Stage 9: Container Delivery
+### Stage 9: Container Delivery - complete
 
 Create or update:
 
@@ -662,7 +668,7 @@ Acceptance criteria:
 - Vertical-slice example works from inside the container.
 - README documents Compose as primary mode and the single-image trade-off.
 
-### Stage 10: Golden Evaluation Harness
+### Stage 10: Golden Evaluation Harness - complete
 
 Create or update:
 

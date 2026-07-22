@@ -1,10 +1,14 @@
 # Enterprise Linux Provenance Risk Agent
 
+[![CI](https://github.com/xsub/ProvenanceRiskAgent/actions/workflows/ci.yml/badge.svg)](https://github.com/xsub/ProvenanceRiskAgent/actions/workflows/ci.yml)
+[![English slides](https://img.shields.io/badge/slides-English-246BFD?logo=html5&logoColor=white)](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index-en.html)
+[![Polish slides](https://img.shields.io/badge/slides-Polish-20AD82?logo=html5&logoColor=white)](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index.html)
+
 Enterprise Linux Provenance Risk Agent is a container-first agentic application
 for explainable Enterprise Linux artifact risk analysis.
 
-The project is evolving from a compact LangChain/LangGraph learning harness
-into a deployable application with a web UI, REST API, MCP interface, typed
+The project has evolved from a compact LangChain/LangGraph learning harness
+into a runnable local application with a web UI, REST API, MCP interface, typed
 evidence contracts, deterministic policy evaluation, and grounded explanations.
 
 The agent consumes evidence from ALBS Provenance Explorer and Enterprise
@@ -78,15 +82,11 @@ The planning baseline is
 The educational build log is
 [`learning-process.md`](learning-process.md).
 
-The project overview is also available as interactive HTML slide decks:
-
-[![View the English presentation](https://img.shields.io/badge/view-English_presentation-246BFD?logo=html5&logoColor=white)](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index-en.html)
-[![View the Polish presentation](https://img.shields.io/badge/view-Polish_presentation-20AD82?logo=html5&logoColor=white)](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index.html)
-
-[View the English presentation](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index-en.html)
-or [open its source](docs/presentation/index-en.html).
-The [Polish presentation](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index.html)
-and [its source](docs/presentation/index.html) remain available too.
+The project overview is also available as interactive HTML slide decks. Open
+the [English presentation](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index-en.html)
+or inspect its [HTML source](docs/presentation/index-en.html). The
+[Polish presentation](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index.html)
+and [source](docs/presentation/index.html) remain available too.
 
 ## What This Project Demonstrates
 
@@ -255,6 +255,43 @@ stable evidence IDs, source pointers, explicit decision modules, cross-source
 contradiction detection, bounded retries, a FastAPI service, web UI, SQLite
 event log and LangGraph checkpoints, Docker Compose packaging, ten MCP tools,
 and a ten-case offline golden evaluation suite.
+
+## Current Implementation State
+
+The repository currently contains a complete local MVP:
+
+- file-based adapters normalize four real ALBS/EDGP export contracts plus the
+  combined and compatibility fixture formats;
+- deterministic modules own evidence identity, contradictions, risk,
+  completeness, confidence, policy, and decision routing;
+- LangGraph runs the investigation and persists optional human-review
+  interrupt/resume checkpoints in SQLite;
+- CLI, REST, web UI, and ten MCP tools share the same analytical workflow;
+- transient adapter failures use three bounded in-process attempts with
+  persisted attempt events, while invalid input is not retried;
+- pytest covers deterministic modules, workflow, persistence, API, CLI, MCP,
+  retry behavior, review lifecycle, and the ten-case golden suite;
+- GitHub Actions runs Ruff, pytest, and the golden evaluation on Python 3.11,
+  3.12, and 3.13, with third-party action revisions pinned to immutable commit
+  SHAs.
+
+The current boundary is equally important: source acquisition is still based
+on JSON exports, execution is single-process, persistence is SQLite, and LLM
+narration is optional. Live ALBS/EDGP adapters, authoritative advisory feeds,
+multi-user concurrency, telemetry, and distributed workers are post-MVP work.
+
+Local quality gates:
+
+```bash
+pip install -e '.[dev]'
+ruff check .
+pytest -q
+provenance-agent evaluate-golden
+```
+
+Latest local validation on 2026-07-22: Ruff passed, pytest reported 34 passed,
+and all 10 golden cases passed. Pytest reports one upstream Starlette/httpx
+deprecation warning; it does not affect the deterministic results.
 
 ## Input Contract
 

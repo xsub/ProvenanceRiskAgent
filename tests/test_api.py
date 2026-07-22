@@ -91,3 +91,52 @@ def test_api_can_resume_a_persisted_review(tmp_path):
     assert reviewed.json()["decision_state"] == "DENY"
     assert findings.status_code == 200
     assert all(item["kind"] != "verified_fact" for item in findings.json())
+
+
+def test_api_rejects_a_second_review_of_completed_investigation(tmp_path):
+    client = TestClient(create_app(db_path=tmp_path / "single-review.sqlite3"))
+    waiting = client.post(
+        "/api/v1/investigations",
+        json={
+            "input_path": "examples/suspicious-build.json",
+            "pause_before_review": True,
+        },
+    ).json()
+    investigation_id = waiting["investigation_id"]
+    review = {
+        "decision": "DENY",
+        "reviewer": "api-test",
+        "rationale": "Deterministic findings confirmed.",
+    }
+
+    first = client.post(
+        f"/api/v1/investigations/{investigation_id}/resume",
+        json=review,
+    )
+    second = client.post(
+        f"/api/v1/investigations/{investigation_id}/resume",
+        json=review,
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 409
+    assert second.json()["detail"] == "Investigation is not awaiting human review."
+
+
+def test_api_records_invalid_input_as_error_without_retry(tmp_path):
+    invalid = tmp_path / "invalid.json"
+    invalid.write_text("{not-json", encoding="utf-8")
+    client = TestClient(create_app(db_path=tmp_path / "invalid.sqlite3"))
+
+    response = client.post(
+        "/api/v1/evaluate",
+        json={"input_path": str(invalid)},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "failed"
+    assert payload["decision_state"] == "ERROR"
+    event_types = [event["event_type"] for event in payload["events"]]
+    assert "investigation_failed" in event_types
+    assert "execution_attempt_failed" not in event_types

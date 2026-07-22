@@ -173,6 +173,12 @@ risk/completeness/confidence assessments, applies explicit policy rules,
 supports human interrupt/resume, and renders Markdown, JSON, REST, UI, or MCP
 output.
 
+Automated verification is implemented in `.github/workflows/ci.yml`. Every
+push to `main` and every pull request runs Ruff, pytest, and the deterministic
+golden evaluation on Python 3.11, 3.12, and 3.13. This CI scope uses bundled
+fixtures and does not claim availability or freshness of external ALBS/EDGP
+services.
+
 The primary bundled MVP case is `examples/albs-edgp-risk-case.json`. It uses
 the combined fixture schema to evaluate ALBS provenance evidence and EDGP
 installed-RPM to ALBS artifact matching evidence in one investigation result.
@@ -188,10 +194,17 @@ Supported source contracts:
 Current verification commands:
 
 ```bash
-.venv/bin/pytest
-.venv/bin/ruff check .
-.venv/bin/provenance-agent evaluate-golden
+python -m venv .venv
+. .venv/bin/activate
+python -m pip install -e '.[dev]'
+pytest -q
+ruff check .
+provenance-agent evaluate-golden
 ```
+
+The 2026-07-22 local baseline is 34 passing pytest cases, Ruff passing, and
+10/10 golden scenarios passing. One upstream Starlette/httpx deprecation
+warning remains non-fatal.
 
 Container-first smoke path:
 
@@ -250,15 +263,15 @@ RabbitMQ, Celery, and Redis are deferred extension points:
 - `docs/adr/0002-untrusted-provenance-model-input.md`
 - `docs/adr/0003-real-edgp-albs-input-contracts.md`
 - `docs/adr/0004-operational-coverage-reporting.md`
+- `docs/adr/0005-persistent-review-retry-and-mcp.md`
+- `learning-process.md`
 - `harness.md`
 
-## Open Architectural Questions
+## Post-MVP Decisions
 
-- Exact policy profiles and risk weights for `ALLOW`, `DENY`, `REVIEW`,
-  `UNKNOWN`, and `ERROR`.
-- Evaluation data source for real ALBS artifacts and expected evidence.
-- Whether missing SBOM or errata coverage should affect evidence completeness,
-  confidence, risk, or only decision routing, and with what weight.
+- Governance, versioning, and calibration of policy profiles and risk weights.
+- Production-governed evaluation data for real ALBS artifacts and expected
+  evidence.
 - Packaging strategy for optional ALBS/EDGP process adapters.
 - When SQLite checkpoints should move to PostgreSQL for concurrent users.
 - Whether MCP streamable HTTP should be co-hosted with REST; the MVP defaults
