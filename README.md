@@ -78,12 +78,15 @@ The planning baseline is
 The educational build log is
 [`learning-process.md`](learning-process.md).
 
-The project overview is also available as an interactive HTML slide deck:
+The project overview is also available as interactive HTML slide decks:
 
-[![View the HTML presentation](https://img.shields.io/badge/view-HTML_presentation-246BFD?logo=html5&logoColor=white)](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index.html)
+[![View the English presentation](https://img.shields.io/badge/view-English_presentation-246BFD?logo=html5&logoColor=white)](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index-en.html)
+[![View the Polish presentation](https://img.shields.io/badge/view-Polish_presentation-20AD82?logo=html5&logoColor=white)](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index.html)
 
-[View the presentation](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index.html)
-or [open its source](docs/presentation/index.html).
+[View the English presentation](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index-en.html)
+or [open its source](docs/presentation/index-en.html).
+The [Polish presentation](https://htmlpreview.github.io/?https://github.com/xsub/ProvenanceRiskAgent/blob/main/docs/presentation/index.html)
+and [its source](docs/presentation/index.html) remain available too.
 
 ## What This Project Demonstrates
 
